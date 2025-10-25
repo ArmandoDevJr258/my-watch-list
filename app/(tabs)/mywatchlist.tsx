@@ -11,10 +11,23 @@ const MyWatchlist = () => {
   const [selectedShow, setSelectedShow] = useState(null);
   const [cast, setCast] = useState([]);
   const [seasons, setSeasons] = useState([]);
+  const [episodes, setEpisodes] = useState([]);
   const [activeFilter, setActiveFilter] = useState("watching");
   const [showDetails, setShowDetails] = useState(false);
   const [progressModal, setProgressModal] = useState(false);
 
+
+  // Fetch episodes for a season
+const fetchEpisodes = async (seasonId: number) => {
+  try {
+    const res = await fetch(`https://api.tvmaze.com/seasons/${seasonId}/episodes`);
+    const data = await res.json();
+    setEpisodes(data); // store episodes for the selected season
+  } catch (error) {
+    console.error(error);
+    setEpisodes([]);
+  }
+};
   // Fetch seasons
   const fetchSeasons = async (id: number) => {
     try {
@@ -48,8 +61,9 @@ const MyWatchlist = () => {
 
   const toggleFilter = (filterName: string) => setActiveFilter(filterName);
 
-  const onSeasonPress = (season) => console.log("Selected season:", season.number);
-
+const onSeasonPress = (season) => {
+  fetchEpisodes(season.id);
+};
   const openYouTubeTrailer = (query: string) => {
     const youtubeAppUrl = `youtube://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
     const youtubeWebUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
@@ -230,34 +244,61 @@ const MyWatchlist = () => {
       )}
 
       {/* Progress Modal */}
-      {progressModal && (
-        <Modal transparent onRequestClose={() => setProgressModal(false)}>
-          <View style={styles.progressModal}>
-            <Text style={{ textAlign: 'center', fontSize: 20, fontWeight: 'bold', marginTop: 10 }}>
-              Update Watch Progress
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
-              {seasons.map((season) => (
-                <TouchableOpacity
-                  key={season.id}
-                  onPress={() => onSeasonPress(season)}
-                  style={{
-                    backgroundColor: 'gray',
-                    width: 100,
-                    height: 40,
-                    borderRadius: 10,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginRight: 10
-                  }}
-                >
-                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Season {season.number}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </Modal>
-      )}
+{progressModal && (
+  <Modal transparent onRequestClose={() => setProgressModal(false)}>
+    <View style={styles.progressModalBackground}>
+      <View style={styles.progressModalContainer}>
+        <Text style={styles.progressModalTitle}>Update Watch Progress</Text>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
+          {seasons.map((season) => (
+            <View key={season.id} style={{ marginRight: 15, width: 130 }}>
+              {/* Season Button */}
+              <TouchableOpacity
+                onPress={() => onSeasonPress(season)}
+                style={styles.seasonButton}
+              >
+                <Text style={styles.seasonButtonText}>Season {season.number}</Text>
+              </TouchableOpacity>
+
+              {/* Episodes */}
+              {episodes.length > 0 && episodes[0].season === season.number && (
+                <ScrollView style={{ maxHeight: 220, marginTop: 5,width:300 }} nestedScrollEnabled>
+                  {episodes.map((ep) => (
+                    <TouchableOpacity
+                      key={ep.id}
+                      onPress={() => Alert.alert('Episode Selected', `You selected: ${ep.name}`)}
+                      style={styles.episodeRow}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={styles.episodeText}
+                        numberOfLines={1}
+                      >
+                        {`E${ep.number}: ${ep.name}`}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.checkButton}
+                        onPress={() => Alert.alert('Marked as watched', ep.name)}
+                      >
+                        <Image
+                          source={require('../../assets/images/check.png')}
+                          style={styles.checkIcon}
+                        />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </View>
+  </Modal>
+)}
+
+
 
     </View>
   );
@@ -291,4 +332,62 @@ const styles = StyleSheet.create({
   modalContent: { width: '95%', height: 600, backgroundColor: 'white', borderRadius: 20, padding: 15 },
   modalButton: { width: '48%', height: 45, backgroundColor: '#444', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   progressModal: { width: '100%', height: 600, backgroundColor: 'white', marginTop: 100, borderRadius: 20, padding: 15 }
+  , progressModalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressModalContainer: {
+    width: '95%',
+    maxHeight: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+  },
+  progressModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  seasonButton: {
+    backgroundColor: '#666',
+    paddingVertical: 10,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  seasonButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  episodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#444',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 5,
+    
+  },
+  episodeText: {
+    color: 'white',
+    fontSize: 13,
+    flex: 1, 
+  
+  },
+  checkButton: {
+    marginLeft: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkIcon: {
+    width: 25,
+    height: 25,
+    tintColor: '#00c853',
+  },
 });
