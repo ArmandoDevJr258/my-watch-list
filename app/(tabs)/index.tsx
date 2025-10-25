@@ -13,11 +13,11 @@ import {
 import { Image } from 'expo-image';
 import { ExpoRouter } from 'expo-router';
 import { useWatchlist } from '../context/WatchlistContext';
-
+import { useFavorites } from '../context/FavoritesContext';
 
 export default function HomeScreen() {
   const { addToWatchlist, isInWatchlist } = useWatchlist();
-
+const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 
 
   const [query, setQuery] = useState('');
@@ -264,7 +264,15 @@ setSelectedShow(show); // store the clicked show
         flexDirection:'row',
         justifyContent:'space-between'
       }}>
-        <TouchableOpacity  
+        <TouchableOpacity
+        onPress={() => {
+  if (!isFavorite(selectedShow.id)) {
+    addToFavorites(selectedShow);
+    alert(`${selectedShow.name} added to Favorites ✅`);
+  } else {
+    alert(`${selectedShow.name} is already in Favorites ✅`);
+  }
+}}  
     >
        <Image source={require('../../assets/images/heart.png')}
        style={{width:20,height:20,marginLeft:30,marginBottom:20,tintColor:'white'}}/>

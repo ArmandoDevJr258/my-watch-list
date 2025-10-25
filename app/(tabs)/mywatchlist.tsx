@@ -2,12 +2,12 @@ import { StyleSheet, Text, TouchableOpacity, View,Modal,FlatList,ScrollView} fro
 import React ,{useState,useEffect} from 'react'
 import { Image } from 'expo-image'
 import { useWatchlist } from '../context/WatchlistContext';
-
+import { useFavorites } from '../context/FavoritesContext';
 
 const mywatchlist = () => {
 
-const { watchlist, removeFromWatchlist, favorites, removeFromFavorites } = useWatchlist();
-
+const { watchlist, removeFromWatchlist } = useWatchlist();
+const { favorites, removeFromFavorites } = useFavorites();
 
 
 const [selectedShow, setSelectedShow] = useState(null);
@@ -150,8 +150,44 @@ const fetchCast = async (id) => {
 )}
 {activeFilter === "favorites" && (
   <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Favorites</Text>
-          <Text style={styles.emptyText}>No Favorites yet.</Text>
+    <FlatList
+      data={favorites}
+      keyExtractor={(item) => item.id.toString()}
+      contentContainerStyle={{ padding: 15 }}
+      renderItem={({ item }) => (
+        <View style={styles.card}>
+          {/* Row 1: Image */}
+          <Image
+            source={{
+              uri: item.image?.medium || 'https://via.placeholder.com/100x150?text=No+Image',
+            }}
+            style={styles.showImage}
+          />
+
+          {/* Row 2: Info */}
+          <View style={styles.infoContainer}>
+            <Text style={styles.showTitle}>{item.name}</Text>
+            <Text style={styles.showGenre}>
+              {item.genres?.join(", ") || "No genre"}
+            </Text>
+            <Text style={styles.showRating}>
+              ⭐ {item.rating?.average || "N/A"}
+            </Text>
+          </View>
+
+       
+
+          {/* Row 4: Actions */}
+          <View style={styles.actionsContainer}>
+           
+
+            <TouchableOpacity onPress={() => removeFromFavorites(item.id)}>
+              <Text style={{fontSize:15,fontWeight:'bold',color:'red'}}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    />
         </View>
 )}
 
