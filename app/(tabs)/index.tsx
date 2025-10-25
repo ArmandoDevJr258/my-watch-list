@@ -14,6 +14,7 @@ import { Image } from 'expo-image';
 import { ExpoRouter } from 'expo-router';
 import { useWatchlist } from '../context/WatchlistContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { Linking, Alert } from 'react-native';
 
 export default function HomeScreen() {
   const { addToWatchlist, isInWatchlist } = useWatchlist();
@@ -133,6 +134,19 @@ setSelectedShow(show); // store the clicked show
 };
 
 
+const openYouTubeTrailer = (query) => {
+  // Construct a YouTube search URL
+  const youtubeAppUrl = `youtube://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  const youtubeWebUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+
+  Linking.canOpenURL(youtubeAppUrl).then((supported) => {
+    if (supported) {
+      Linking.openURL(youtubeAppUrl);
+    } else {
+      Linking.openURL(youtubeWebUrl); // fallback to web
+    }
+  }).catch(err => Alert.alert('Error', 'Cannot open YouTube'));
+};
 
   return (
     <View style={styles.container}>
@@ -328,7 +342,8 @@ setSelectedShow(show); // store the clicked show
         flexDirection:'row',
         gap:10,
         marginTop:10}}>
-   <TouchableOpacity style={styles.btna}>
+   <TouchableOpacity style={styles.btna}
+   onPress={() => openYouTubeTrailer(selectedShow.name + " trailer")}>
     <Text style={{textAlign:"center"}}>Watch Trailer</Text>
     <Image
       source={require('../../assets/images/travel.png')}
