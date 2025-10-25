@@ -15,32 +15,27 @@ const MyWatchlist = () => {
   const [activeFilter, setActiveFilter] = useState("watching");
   const [showDetails, setShowDetails] = useState(false);
   const [progressModal, setProgressModal] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState(null);
+  const [watchedEpisodes, setWatchedEpisodes] = useState({});
+  const [totalEpisodesMap, setTotalEpisodesMap] = useState({});
 
-
-  // Fetch episodes for a season
-const fetchEpisodes = async (seasonId: number) => {
+  // --- Fetch functions ---
+const fetchSeasons = async (id) => {
   try {
-    const res = await fetch(`https://api.tvmaze.com/seasons/${seasonId}/episodes`);
+    const res = await fetch(`https://api.tvmaze.com/shows/${id}/seasons`);
     const data = await res.json();
-    setEpisodes(data); // store episodes for the selected season
+    setSeasons(data);
+
+    // Calculate total episodes for this show
+    const total = data.reduce((sum, s) => sum + (s.episodeOrder || 0), 0);
+    setTotalEpisodesMap(prev => ({ ...prev, [id]: total }));
   } catch (error) {
     console.error(error);
-    setEpisodes([]);
+    setSeasons([]);
   }
 };
-  // Fetch seasons
-  const fetchSeasons = async (id: number) => {
-    try {
-      const res = await fetch(`https://api.tvmaze.com/shows/${id}/seasons`);
-      const data = await res.json();
-      setSeasons(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
-  // Fetch cast
-  const fetchCast = async (id: number) => {
+  const fetchCast = async (id) => {
     try {
       const res = await fetch(`https://api.tvmaze.com/shows/${id}/cast`);
       const data = await res.json();
@@ -51,26 +46,52 @@ const fetchEpisodes = async (seasonId: number) => {
     }
   };
 
-  // Trigger when selectedShow changes
-  useEffect(() => {
-    if (selectedShow) {
-      fetchSeasons(selectedShow.id);
-      fetchCast(selectedShow.id);
+  const fetchEpisodes = async (seasonId) => {
+    try {
+      const res = await fetch(`https://api.tvmaze.com/seasons/${seasonId}/episodes`);
+      const data = await res.json();
+      setEpisodes(data);
+    } catch (error) {
+      console.error(error);
+      setEpisodes([]);
     }
-  }, [selectedShow]);
+  };
 
-  const toggleFilter = (filterName: string) => setActiveFilter(filterName);
+useEffect(() => {
+  if (selectedShow) {
+    fetchSeasons(selectedShow.id);
+    fetchCast(selectedShow.id);
+    setSelectedSeason(null);
+    setEpisodes([]);
+  }
+}, [selectedShow]);
 
-const onSeasonPress = (season) => {
-  fetchEpisodes(season.id);
-};
-  const openYouTubeTrailer = (query: string) => {
+  const onSeasonPress = async (season) => {
+    setSelectedSeason(season.number);
+    fetchEpisodes(season.id);
+  };
+
+  const toggleFilter = (filterName) => setActiveFilter(filterName);
+
+  const openYouTubeTrailer = (query) => {
     const youtubeAppUrl = `youtube://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
     const youtubeWebUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
     Linking.canOpenURL(youtubeAppUrl).then(supported => {
       if (supported) Linking.openURL(youtubeAppUrl);
       else Linking.openURL(youtubeWebUrl);
     }).catch(() => Alert.alert('Error', 'Cannot open YouTube'));
+  };
+
+  // --- Mark episode watched/unwatched ---
+  const markEpisodeAsWatched = (showId, episodeId) => {
+    setWatchedEpisodes(prev => {
+      const showWatched = prev[showId] || [];
+      const isWatched = showWatched.includes(episodeId);
+      const updated = isWatched
+        ? showWatched.filter(id => id !== episodeId)
+        : [...showWatched, episodeId];
+      return { ...prev, [showId]: updated };
+    });
   };
 
   return (
@@ -86,7 +107,7 @@ const onSeasonPress = (season) => {
 
       {/* Filter */}
       <View style={styles.filter}>
-        {["watching", "favorites", "completed"].map((filter) => (
+        {["watching", "favorites", "completed"].map(filter => (
           <TouchableOpacity
             key={filter}
             style={[styles.btnfilter, activeFilter === filter && styles.activeBtn]}
@@ -107,81 +128,51 @@ const onSeasonPress = (season) => {
               No shows added yet.
             </Text>
           ) : (
-            <FlatList
-              data={watchlist}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={{ padding: 15 }}
-              renderItem={({ item }) => (
-                <View style={styles.card}>
-                  <Image
-                    source={{ uri: item.image?.medium || 'https://via.placeholder.com/100x150?text=No+Image' }}
-                    style={styles.showImage}
-                  />
-                  <View style={styles.infoContainer}>
-                    <Text style={styles.showTitle}>{item.name}</Text>
-                    <Text style={styles.showGenre}>{item.genres?.join(", ") || "No genre"}</Text>
-                    <Text style={styles.showRating}>⭐ {item.rating?.average || "N/A"}</Text>
-                  </View>
-                  <View style={styles.progressContainer}>
-                    <Text style={styles.progressLabel}>Progress</Text>
-                    <View style={styles.progressBar}>
-                      <View style={[styles.progressFill, { width: "60%" }]} />
-                    </View>
-                    <Text style={styles.progressText}>60%</Text>
-                  </View>
-                  <View style={styles.actionsContainer}>
-                    <TouchableOpacity onPress={() => { setSelectedShow(item); setShowDetails(true); }}>
-                      <Image
-                        source={require('../../assets/images/play-button.png')}
-                        style={styles.playIcon}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => removeFromWatchlist(item.id)}>
-                      <Text style={styles.removeText}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-            />
-          )}
-        </View>
-      )}
+           <FlatList
+  data={watchlist}
+  keyExtractor={item => item.id.toString()}
+  extraData={watchedEpisodes} // re-render when watchedEpisodes changes
+  contentContainerStyle={{ padding: 15 }}
+  renderItem={({ item }) => {
+    const totalEpisodes = totalEpisodesMap[item.id] || 0;
+    const watchedCount = watchedEpisodes[item.id]?.length || 0;
+    const progressPercent = totalEpisodes ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
 
-      {/* Favorites */}
-      {activeFilter === "favorites" && (
-        <View style={styles.sectionContainer}>
-          <FlatList
-            data={favorites}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={{ padding: 15 }}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <Image
-                  source={{ uri: item.image?.medium || 'https://via.placeholder.com/100x150?text=No+Image' }}
-                  style={styles.showImage}
-                />
-                <View style={styles.infoContainer}>
-                  <Text style={styles.showTitle}>{item.name}</Text>
-                  <Text style={styles.showGenre}>{item.genres?.join(", ") || "No genre"}</Text>
-                  <Text style={styles.showRating}>⭐ {item.rating?.average || "N/A"}</Text>
-                </View>
-                <View style={styles.actionsContainer}>
-                  <TouchableOpacity onPress={() => removeFromFavorites(item.id)}>
-                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'red' }}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          />
+    return (
+      <View style={styles.card}>
+        <Image
+          source={{ uri: item.image?.medium || "https://via.placeholder.com/100x150?text=No+Image" }}
+          style={styles.showImage}
+        />
+        <View style={styles.infoContainer}>
+          <Text style={styles.showTitle}>{item.name}</Text>
+          <Text style={styles.showGenre}>{item.genres?.join(", ") || "No genre"}</Text>
+          <Text style={styles.showRating}>⭐ {item.rating?.average || "N/A"}</Text>
         </View>
-      )}
 
-      {/* Completed */}
-      {activeFilter === "completed" && (
-        <View style={styles.sectionContainer}>
-          <Text style={{ textAlign: 'center', marginTop: 200, fontWeight: 'bold', fontSize: 20 }}>
-            No Data yet.
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>
+            {progressPercent}% ({watchedCount}/{totalEpisodes})
           </Text>
+        </View>
+
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity onPress={() => setSelectedShow(item) || setShowDetails(true)}>
+            <Image
+              source={require("../../assets/images/play-button.png")}
+              style={styles.playIcon}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => removeFromWatchlist(item.id)}>
+            <Text style={styles.removeText}>Remove</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }}
+/>
+
+          )}
         </View>
       )}
 
@@ -197,6 +188,9 @@ const onSeasonPress = (season) => {
                 />
                 <View style={{ flex: 1, justifyContent: 'space-between' }}>
                   <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>Progress</Text>
+                  <Text style={{ fontSize: 14, color: 'lightgreen', marginBottom: 10 }}>
+                    {watchedEpisodes[selectedShow.id]?.length || 0}/{seasons.reduce((sum,s)=>sum+(s.episodeOrder||0),0)} eps watched
+                  </Text>
                   <Text style={{ fontSize: 14, color: '#555', marginBottom: 5 }}>Info:</Text>
                   <ScrollView style={{ maxHeight: 140 }}>
                     <Text style={{ fontSize: 14, color: 'lightblue', lineHeight: 20 }}>
@@ -244,67 +238,45 @@ const onSeasonPress = (season) => {
       )}
 
       {/* Progress Modal */}
-{progressModal && (
-  <Modal transparent onRequestClose={() => setProgressModal(false)}>
-    <View style={styles.progressModalBackground}>
-      <View style={styles.progressModalContainer}>
-        <Text style={styles.progressModalTitle}>Update Watch Progress</Text>
+      {progressModal && (
+        <Modal transparent animationType="slide" onRequestClose={() => setProgressModal(false)}>
+          <View style={styles.progressModalBackground}>
+            <View style={styles.progressModalContainer}>
+              <Text style={styles.progressModalTitle}>Update Watch Progress</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 12 }} contentContainerStyle={{ paddingHorizontal: 10 }}>
+                {seasons.map(season => (
+                  <TouchableOpacity
+                    key={season.id}
+                    onPress={() => onSeasonPress(season)}
+                    style={[styles.seasonButton, selectedSeason === season.number && styles.activeSeasonButton, { marginRight: 10 }]}
+                  >
+                    <Text style={[styles.seasonButtonText, selectedSeason === season.number && styles.activeSeasonButtonText]}>
+                      Season {season.number}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
-          {seasons.map((season) => (
-            <View key={season.id} style={{ marginRight: 15, width: 130 }}>
-              {/* Season Button */}
-              <TouchableOpacity
-                onPress={() => onSeasonPress(season)}
-                style={styles.seasonButton}
-              >
-                <Text style={styles.seasonButtonText}>Season {season.number}</Text>
-              </TouchableOpacity>
-
-              {/* Episodes */}
-              {episodes.length > 0 && episodes[0].season === season.number && (
-                <ScrollView style={{ maxHeight: 220, marginTop: 5,width:300 }} nestedScrollEnabled>
-                  {episodes.map((ep) => (
-                    <TouchableOpacity
-                      key={ep.id}
-                      onPress={() => Alert.alert('Episode Selected', `You selected: ${ep.name}`)}
-                      style={styles.episodeRow}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={styles.episodeText}
-                        numberOfLines={1}
-                      >
-                        {`E${ep.number}: ${ep.name}`}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.checkButton}
-                        onPress={() => Alert.alert('Marked as watched', ep.name)}
-                      >
-                        <Image
-                          source={require('../../assets/images/check.png')}
-                          style={styles.checkIcon}
-                        />
-                      </TouchableOpacity>
+              <ScrollView style={{ maxHeight: 250, marginTop: 8 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                {episodes.map(ep => (
+                  <TouchableOpacity key={ep.id} style={styles.episodeRow} activeOpacity={0.7}>
+                    <Text style={styles.episodeText}>{`E${ep.number}: ${ep.name}`}</Text>
+                    <TouchableOpacity style={styles.checkButton} onPress={() => markEpisodeAsWatched(selectedShow.id, ep.id)}>
+                      <Image source={require('../../assets/images/check.png')} style={styles.checkIcon} />
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
-          ))}
-        </ScrollView>
-      </View>
-    </View>
-  </Modal>
-)}
-
-
-
+          </View>
+        </Modal>
+      )}
     </View>
   );
 };
 
 export default MyWatchlist;
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'gray' },
@@ -323,7 +295,7 @@ const styles = StyleSheet.create({
   progressLabel: { color: "#aaa", fontSize: 12 },
   progressBar: { width: "100%", height: 6, backgroundColor: "#555", borderRadius: 4, overflow: "hidden", marginTop: 5 },
   progressFill: { height: "100%", backgroundColor: "#00c853" },
-  progressText: { color: "white", fontSize: 12, marginTop: 4 },
+  progressText: {  fontSize: 18, marginTop: -10,color:'green',fontWeight:'bold' },
   actionsContainer: { width: 60, alignItems: "center", justifyContent: "center" },
   playIcon: { width: 35, height: 35, tintColor: "white" },
   removeText: { color: "tomato", fontSize: 12, marginTop: 25, textAlign: "center" },
@@ -332,62 +304,78 @@ const styles = StyleSheet.create({
   modalContent: { width: '95%', height: 600, backgroundColor: 'white', borderRadius: 20, padding: 15 },
   modalButton: { width: '48%', height: 45, backgroundColor: '#444', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   progressModal: { width: '100%', height: 600, backgroundColor: 'white', marginTop: 100, borderRadius: 20, padding: 15 }
-  , progressModalBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressModalContainer: {
-    width: '95%',
-    maxHeight: '80%',
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-  },
-  progressModalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  seasonButton: {
-    backgroundColor: '#666',
-    paddingVertical: 10,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  seasonButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  episodeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#444',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    marginBottom: 5,
-    
-  },
-  episodeText: {
-    color: 'white',
-    fontSize: 13,
-    flex: 1, 
+  , 
+ progressModalBackground: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.6)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+},
+
+progressModalContainer: {
+  backgroundColor: '#1e1e1e',
+  borderRadius: 16,
+  width: '100%',
+  padding: 20,
+  maxHeight: '85%',
+},
+
+progressModalTitle: {
+  color: '#fff',
+  fontSize: 20,
+  fontWeight: '700',
+  textAlign: 'center',
+  marginBottom: 10,
+},
+
+seasonButton: {
+  backgroundColor: '#2a2a2a',
+  borderRadius: 10,
+  paddingVertical: 10,
+  alignItems: 'center',
+  width:100
+},
+
+activeSeasonButton: {
+  backgroundColor: '#4e8ef7',
+},
+
+seasonButtonText: {
+  color: '#fff',
+  fontWeight: '600',
+},
+
+activeSeasonButtonText: {
+  color: '#fff',
+  fontWeight: '700',
+},
+
+episodeRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  backgroundColor: '#2b2b2b',
+  borderRadius: 8,
+  paddingVertical: 8,
+  paddingHorizontal: 10,
+  marginBottom: 6,
+},
+
+episodeText: {
+  color: '#fff',
+  flex: 1,
+  fontSize: 14,
+},
+
+checkButton: {
+  padding: 4,
+},
+
+checkIcon: {
+  width: 18,
+  height: 18,
   
-  },
-  checkButton: {
-    marginLeft: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkIcon: {
-    width: 25,
-    height: 25,
-    tintColor: '#00c853',
-  },
+},
+
 });
