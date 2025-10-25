@@ -8,6 +8,7 @@ import {
   ActivityIndicator, 
   TouchableOpacity,
   Keyboard,
+  Modal
 } from 'react-native';
 import { Image } from 'expo-image';
 import { ExpoRouter } from 'expo-router';
@@ -18,6 +19,25 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [topRated, setTopRated] = useState([]);
   const [trending, setTrending] = useState([]);
+  //details modal screen
+  const [DetailsScreen,SetDetailsScreen]= useState(false);
+  const [selectedShow, setSelectedShow] = useState(null);
+  const [cast, setCast] = useState([]);
+
+  useEffect(() => {
+  if (selectedShow) fetchCast(selectedShow.id);
+}, [selectedShow]);
+
+const fetchCast = async (id) => {
+  try {
+    const res = await fetch(`https://api.tvmaze.com/shows/${id}/cast`);
+    const data = await res.json();
+    setCast(data); // store full cast array
+  } catch (error) {
+    console.error(error);
+    setCast([]);
+  }
+};
 
   const BASE_URL = "https://api.tvmaze.com";
 
@@ -97,13 +117,13 @@ export default function HomeScreen() {
   </TouchableOpacity>
 );
 const onTopRatedPress = (show) => {
-  // Example: navigate to show details
-  console.log('Top Rated Show pressed:', show.name);
+  setSelectedShow(show); // store the clicked show
+  SetDetailsScreen(true); // open modal
 };
 
 const onTrendingPress = (show) => {
-  // Example: add to watchlist or show info
-  console.log('Trending Show pressed:', show.name);
+setSelectedShow(show); // store the clicked show
+  SetDetailsScreen(true); // open modal
 };
 
 
@@ -181,6 +201,8 @@ const onTrendingPress = (show) => {
         );
       })}
     </ScrollView>
+
+
   </>
 )}
 
@@ -200,6 +222,82 @@ const onTrendingPress = (show) => {
           </ScrollView>
         </ScrollView>
       )}
+
+      
+        {DetailsScreen && selectedShow && (
+  <Modal
+    animationType="slide"
+    transparent={false}
+    onRequestClose={() => SetDetailsScreen(false)}
+  >
+    <View style={{ flex: 1, backgroundColor: 'gray', padding: 20 }}>
+      <TouchableOpacity onPress={() => SetDetailsScreen(false)}>
+       <Image source={require('../../assets/images/previous.png')}
+       style={{width:20,height:20,marginLeft:300,marginBottom:20,tintColor:'white'}}/>
+      </TouchableOpacity>
+
+      <Image
+        source={{ uri: selectedShow.image?.original || selectedShow.image?.medium || 'https://via.placeholder.com/300x450?text=No+Image' }}
+        style={{ width: '95%', height: 200, borderRadius: 10, marginBottom: 20 ,alignSelf:'center'}}
+      />
+
+<Text style={{fontSize:18,fontWeight:'bold',color:'white'}}>Show Name:</Text>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'blue', marginBottom: 10 }}>
+        {selectedShow.name}
+      </Text>
+      <Text style={{ fontSize: 18, color: 'gold', marginBottom: 10 }}>
+        ⭐ {selectedShow.rating?.average || 'N/A'}
+      </Text>
+      <Text style={{ fontSize: 16, color: 'lightblue', marginBottom: 10 }}>
+        {selectedShow.genres?.join(', ') || 'No genres'}
+      </Text>
+      <Text style={{fontSize:18,fontWeight:'bold',color:'white'}}>Summary :</Text>
+     <ScrollView 
+  style={{ maxHeight: 120, marginVertical: 10 }} 
+  contentContainerStyle={{ padding: 10 }}
+>
+  <Text style={{ fontSize: 16, color: 'lightblue', lineHeight: 22 }}>
+    {selectedShow.summary?.replace(/<[^>]+>/g, '') || 'No summary available'}
+  </Text>
+</ScrollView>
+
+      
+<Text style={{ fontSize:18,fontWeight:'bold',color:'white'}}>🎭 Cast :</Text>
+<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+  {cast.map((item, index) => (
+    <View key={index} style={{ alignItems: 'center', marginRight: 10 }}>
+      <Image
+        source={{ uri: item.person.image?.medium || 'https://via.placeholder.com/80x100?text=No+Image' }}
+        style={{ width: 80, height: 100, borderRadius: 8 }}
+      />
+      <Text style={{ color: 'white', fontSize: 12, marginTop: 5 }}>
+        {item.person.name}
+      </Text>
+    </View>
+  ))}
+</ScrollView>
+
+      <View style={{
+        flexDirection:'row',
+        gap:10,
+        marginTop:10}}>
+   <TouchableOpacity style={styles.btna}>
+    <Text style={{textAlign:"center"}}>Watch Trailer</Text>
+    <Image
+      source={require('../../assets/images/travel.png')}
+       style={{width:20,height:20,marginBottom:20,marginLeft:20}}/>
+   </TouchableOpacity>
+  <TouchableOpacity style={styles.btna}>
+    <Text style={{textAlign:"center"}}>Add to Watch list</Text>
+    <Image
+      source={require('../../assets/images/clapperboard2.png')}
+       style={{width:20,height:20,marginBottom:20,marginLeft:15}}/>
+   </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+)}
+     
     </View>
   );
 }
@@ -264,4 +362,13 @@ addIcon: {
   showTitle:{ color:'white', fontSize:16, fontWeight:'bold', marginBottom:5 },
   showRating:{ color:'gold', fontSize:14, marginBottom:5 },
   showGenre:{ color:'#ccc', fontSize:12 },
+  btna:{
+    width:"50%",
+    height:50,
+    padding:10,
+    backgroundColor:'white',
+    borderRadius:10,
+    flexDirection:'row'
+
+  }
 });
