@@ -1,9 +1,11 @@
 import { StyleSheet, Text, TouchableOpacity, View, Modal, FlatList, ScrollView, Alert, Linking } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Image } from 'expo-image';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWatchlist } from '../context/WatchlistContext';
 import { useFavorites } from '../context/FavoritesContext';
-
+const WATCHED_EPISODES_KEY = 'watchedEpisodes';
+const TOTAL_EPISODES_KEY = 'totalEpisodesMap';
 const MyWatchlist = () => {
   const { watchlist, removeFromWatchlist } = useWatchlist();
   const { favorites, removeFromFavorites } = useFavorites();
@@ -19,80 +21,109 @@ const MyWatchlist = () => {
   const [watchedEpisodes, setWatchedEpisodes] = useState({});
   const [totalEpisodesMap, setTotalEpisodesMap] = useState({});
 
-  // --- Fetch functions ---
-const fetchSeasons = async (id) => {
-  try {
-    const res = await fetch(`https://api.tvmaze.com/shows/${id}/seasons`);
-    const data = await res.json();
-    setSeasons(data);
+  // --- Fetch functions (UPDATED to cache total episodes) ---
+  const fetchSeasons = async (id) => {
+    try {
+      const res = await fetch(`https://api.tvmaze.com/shows/${id}/seasons`);
+      const data = await res.json();
+      setSeasons(data);
 
-    // Calculate total episodes for this show
-    const total = data.reduce((sum, s) => sum + (s.episodeOrder || 0), 0);
-    setTotalEpisodesMap(prev => ({ ...prev, [id]: total }));
-  } catch (error) {
-    console.error(error);
-    setSeasons([]);
-  }
-};
+      // Calculate and save total episodes for this show
+      const total = data.reduce((sum, s) => sum + (s.episodeOrder || 0), 0);
+      setTotalEpisodesMap(prev => {
+        const newMap = { ...prev, [id]: total };
+        AsyncStorage.setItem(TOTAL_EPISODES_KEY, JSON.stringify(newMap)).catch(console.error);
+        return newMap;
+      });
+    } catch (error) {
+      console.error(error);
+      setSeasons([]);
+    }
+  };
 
-  const fetchCast = async (id) => {
-    try {
-      const res = await fetch(`https://api.tvmaze.com/shows/${id}/cast`);
-      const data = await res.json();
-      setCast(data);
-    } catch (error) {
-      console.error(error);
-      setCast([]);
-    }
-  };
+  const fetchCast = async (id) => {
+    try {
+      const res = await fetch(`https://api.tvmaze.com/shows/${id}/cast`);
+      const data = await res.json();
+      setCast(data);
+    } catch (error) {
+      console.error(error);
+      setCast([]);
+    }
+  };
 
-  const fetchEpisodes = async (seasonId) => {
-    try {
-      const res = await fetch(`https://api.tvmaze.com/seasons/${seasonId}/episodes`);
-      const data = await res.json();
-      setEpisodes(data);
-    } catch (error) {
-      console.error(error);
-      setEpisodes([]);
-    }
-  };
+  const fetchEpisodes = async (seasonId) => {
+    try {
+      const res = await fetch(`https://api.tvmaze.com/seasons/${seasonId}/episodes`);
+      const data = await res.json();
+      setEpisodes(data);
+    } catch (error) {
+      console.error(error);
+      setEpisodes([]);
+    }
+  };
+  
+  // --- Async Storage Handlers ---
 
-useEffect(() => {
-  if (selectedShow) {
-    fetchSeasons(selectedShow.id);
-    fetchCast(selectedShow.id);
-    setSelectedSeason(null);
-    setEpisodes([]);
-  }
-}, [selectedShow]);
+  // Load watched episodes and total map from AsyncStorage
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const savedWatched = await AsyncStorage.getItem(WATCHED_EPISODES_KEY);
+        if (savedWatched) setWatchedEpisodes(JSON.parse(savedWatched));
 
-  const onSeasonPress = async (season) => {
-    setSelectedSeason(season.number);
-    fetchEpisodes(season.id);
-  };
+        const savedTotal = await AsyncStorage.getItem(TOTAL_EPISODES_KEY);
+        if (savedTotal) setTotalEpisodesMap(JSON.parse(savedTotal));
+      } catch (error) {
+        console.error("Failed to load data:", error);
+      }
+    };
+    loadData();
+  }, []);
 
-  const toggleFilter = (filterName) => setActiveFilter(filterName);
 
-  const openYouTubeTrailer = (query) => {
-    const youtubeAppUrl = `youtube://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    const youtubeWebUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    Linking.canOpenURL(youtubeAppUrl).then(supported => {
-      if (supported) Linking.openURL(youtubeAppUrl);
-      else Linking.openURL(youtubeWebUrl);
-    }).catch(() => Alert.alert('Error', 'Cannot open YouTube'));
-  };
+  useEffect(() => {
+    if (selectedShow) {
+      fetchSeasons(selectedShow.id);
+      fetchCast(selectedShow.id);
+      setSelectedSeason(null);
+      setEpisodes([]);
+    }
+  }, [selectedShow]);
 
-  // --- Mark episode watched/unwatched ---
-  const markEpisodeAsWatched = (showId, episodeId) => {
-    setWatchedEpisodes(prev => {
-      const showWatched = prev[showId] || [];
-      const isWatched = showWatched.includes(episodeId);
-      const updated = isWatched
-        ? showWatched.filter(id => id !== episodeId)
-        : [...showWatched, episodeId];
-      return { ...prev, [showId]: updated };
-    });
-  };
+  const onSeasonPress = async (season) => {
+    setSelectedSeason(season.number);
+    fetchEpisodes(season.id);
+  };
+
+  const toggleFilter = (filterName) => setActiveFilter(filterName);
+
+  const openYouTubeTrailer = (query) => {
+    const youtubeAppUrl = `youtube://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const youtubeWebUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    Linking.canOpenURL(youtubeAppUrl).then(supported => {
+      if (supported) Linking.openURL(youtubeAppUrl);
+      else Linking.openURL(youtubeWebUrl);
+    }).catch(() => Alert.alert('Error', 'Cannot open YouTube'));
+  };
+
+  // --- Mark episode watched/unwatched (FIXED & SAVING) ---
+  const markEpisodeAsWatched = async (showId, episodeId) => {
+    setWatchedEpisodes(prev => {
+      const showWatched = prev[showId] || [];
+      const isWatched = showWatched.includes(episodeId);
+      const updated = isWatched
+        ? showWatched.filter(id => id !== episodeId)
+        : [...showWatched, episodeId];
+
+      const newWatched = { ...prev, [showId]: updated };
+
+      // Save to AsyncStorage
+      AsyncStorage.setItem(WATCHED_EPISODES_KEY, JSON.stringify(newWatched)).catch(err => console.error(err));
+
+      return newWatched;
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -128,50 +159,49 @@ useEffect(() => {
               No shows added yet.
             </Text>
           ) : (
-           <FlatList
-  data={watchlist}
-  keyExtractor={item => item.id.toString()}
-  extraData={watchedEpisodes} // re-render when watchedEpisodes changes
-  contentContainerStyle={{ padding: 15 }}
-  renderItem={({ item }) => {
-    const totalEpisodes = totalEpisodesMap[item.id] || 0;
-    const watchedCount = watchedEpisodes[item.id]?.length || 0;
-    const progressPercent = totalEpisodes ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
+            <FlatList
+              data={watchlist}
+              keyExtractor={item => item.id.toString()}
+              extraData={watchedEpisodes}
+              contentContainerStyle={{ padding: 15 }}
+              renderItem={({ item }) => {
+                const totalEpisodes = totalEpisodesMap[item.id] || 0;
+                const watchedCount = watchedEpisodes[item.id]?.length || 0;
+                const progressPercent = totalEpisodes ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
 
-    return (
-      <View style={styles.card}>
-        <Image
-          source={{ uri: item.image?.medium || "https://via.placeholder.com/100x150?text=No+Image" }}
-          style={styles.showImage}
-        />
-        <View style={styles.infoContainer}>
-          <Text style={styles.showTitle}>{item.name}</Text>
-          <Text style={styles.showGenre}>{item.genres?.join(", ") || "No genre"}</Text>
-          <Text style={styles.showRating}>⭐ {item.rating?.average || "N/A"}</Text>
-        </View>
+                return (
+                  <View style={styles.card}>
+                    <Image
+                      source={{ uri: item.image?.medium || "https://via.placeholder.com/100x150?text=No+Image" }}
+                      style={styles.showImage}
+                    />
+                    <View style={styles.infoContainer}>
+                      <Text style={styles.showTitle}>{item.name}</Text>
+                      <Text style={styles.showGenre}>{item.genres?.join(", ") || "No genre"}</Text>
+                      <Text style={styles.showRating}>⭐ {item.rating?.average || "N/A"}</Text>
+                    </View>
 
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>
-            {progressPercent}% ({watchedCount}/{totalEpisodes})
-          </Text>
-        </View>
+                    <View style={styles.progressContainer}>
+                      <Text style={styles.progressText}>
+                        {progressPercent}% ({watchedCount}/{totalEpisodes})
+                      </Text>
+                    </View>
 
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity onPress={() => setSelectedShow(item) || setShowDetails(true)}>
-            <Image
-              source={require("../../assets/images/play-button.png")}
-              style={styles.playIcon}
+                    <View style={styles.actionsContainer}>
+                      <TouchableOpacity onPress={() => setSelectedShow(item) || setShowDetails(true)}>
+                        <Image
+                          source={require("../../assets/images/play-button.png")}
+                          style={styles.playIcon}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => removeFromWatchlist(item.id)}>
+                        <Text style={styles.removeText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              }}
             />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => removeFromWatchlist(item.id)}>
-            <Text style={styles.removeText}>Remove</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }}
-/>
-
           )}
         </View>
       )}
@@ -277,7 +307,7 @@ useEffect(() => {
 
 export default MyWatchlist;
 
-
+// --- Styles ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'gray' },
   header: { width: '100%', marginTop: 30, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
@@ -292,90 +322,22 @@ const styles = StyleSheet.create({
   showGenre: { color: "#bbb", fontSize: 12, marginVertical: 3 },
   showRating: { color: "gold", fontSize: 14 },
   progressContainer: { width: 70, alignItems: "center", justifyContent: "center" },
-  progressLabel: { color: "#aaa", fontSize: 12 },
-  progressBar: { width: "100%", height: 6, backgroundColor: "#555", borderRadius: 4, overflow: "hidden", marginTop: 5 },
-  progressFill: { height: "100%", backgroundColor: "#00c853" },
-  progressText: {  fontSize: 18, marginTop: -10,color:'green',fontWeight:'bold' },
+  progressText: { fontSize: 18, marginTop: -10, color:'green', fontWeight:'bold' },
   actionsContainer: { width: 60, alignItems: "center", justifyContent: "center" },
   playIcon: { width: 35, height: 35, tintColor: "white" },
   removeText: { color: "tomato", fontSize: 12, marginTop: 25, textAlign: "center" },
-  sectionContainer: { flex: 1, marginTop: 10 },
   modalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '95%', height: 600, backgroundColor: 'white', borderRadius: 20, padding: 15 },
   modalButton: { width: '48%', height: 45, backgroundColor: '#444', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  progressModal: { width: '100%', height: 600, backgroundColor: 'white', marginTop: 100, borderRadius: 20, padding: 15 }
-  , 
- progressModalBackground: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.6)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  paddingHorizontal: 20,
-},
-
-progressModalContainer: {
-  backgroundColor: '#1e1e1e',
-  borderRadius: 16,
-  width: '100%',
-  padding: 20,
-  maxHeight: '85%',
-},
-
-progressModalTitle: {
-  color: '#fff',
-  fontSize: 20,
-  fontWeight: '700',
-  textAlign: 'center',
-  marginBottom: 10,
-},
-
-seasonButton: {
-  backgroundColor: '#2a2a2a',
-  borderRadius: 10,
-  paddingVertical: 10,
-  alignItems: 'center',
-  width:100
-},
-
-activeSeasonButton: {
-  backgroundColor: '#4e8ef7',
-},
-
-seasonButtonText: {
-  color: '#fff',
-  fontWeight: '600',
-},
-
-activeSeasonButtonText: {
-  color: '#fff',
-  fontWeight: '700',
-},
-
-episodeRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  backgroundColor: '#2b2b2b',
-  borderRadius: 8,
-  paddingVertical: 8,
-  paddingHorizontal: 10,
-  marginBottom: 6,
-},
-
-episodeText: {
-  color: '#fff',
-  flex: 1,
-  fontSize: 14,
-},
-
-checkButton: {
-  padding: 4,
-},
-
-checkIcon: {
-  width: 18,
-  height: 18,
-  
-},
-
+  progressModalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+  progressModalContainer: { backgroundColor: '#1e1e1e', borderRadius: 16, width: '100%', padding: 20, maxHeight: '85%' },
+  progressModalTitle: { color: '#fff', fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 10 },
+  seasonButton: { backgroundColor: '#2a2a2a', borderRadius: 10, paddingVertical: 10, alignItems: 'center', width:100 },
+  activeSeasonButton: { backgroundColor: '#4e8ef7' },
+  seasonButtonText: { color: '#fff', fontWeight: '600' },
+  activeSeasonButtonText: { color: '#fff', fontWeight: '700' },
+  episodeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#2b2b2b', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, marginBottom: 6 },
+  episodeText: { color: '#fff', flex: 1, fontSize: 14 },
+  checkButton: { padding: 4 },
+  checkIcon: { width: 18, height: 18 }
 });
