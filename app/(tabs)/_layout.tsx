@@ -6,11 +6,14 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { WatchlistProvider } from "../context/WatchlistContext";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
+
+     <WatchlistProvider>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
@@ -44,6 +47,6 @@ export default function TabLayout() {
             style={{width:25,height:25,tintColor:'white'}}/>,
         }}
       />
-    </Tabs>
+    </Tabs></WatchlistProvider>
   );
 }

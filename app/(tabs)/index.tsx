@@ -12,8 +12,14 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { ExpoRouter } from 'expo-router';
+import { useWatchlist } from '../context/WatchlistContext';
+
 
 export default function HomeScreen() {
+  const { addToWatchlist, isInWatchlist } = useWatchlist();
+
+
+
   const [query, setQuery] = useState('');
   const [shows, setShows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -143,7 +149,9 @@ setSelectedShow(show); // store the clicked show
             onSubmitEditing={searchShows}
           />
           <TouchableOpacity style={styles.searchButton} onPress={searchShows}>
-            <Text style={styles.searchButtonText}>🔍</Text>
+            <Image
+            source={require('../../assets/images/search.png')}
+            style={{width:30,height:30,tintColor:'black'}}/>
           </TouchableOpacity>
         </View>
       </View>
@@ -211,12 +219,33 @@ setSelectedShow(show); // store the clicked show
       {/* Default content */}
       {!loading && shows.length === 0 && (
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.t2}>⭐ Top Rated</Text>
+          <View style={{
+            width:'100%',
+            display:'flex',
+            flexDirection:'row',
+            gap:20,
+            marginTop:10
+          }}>
+             <Image source={(require('../../assets/images/popular.png'))}
+          style={{width:30,height:30,marginLeft:20,}}/>
+          <Text style={{fontSize:20,fontWeight:"bold",color:'white'}}>Top Rated Shows</Text>
+          </View>
+         
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
            {topRated.map(show => renderShowCard(show, onTopRatedPress))}
           </ScrollView>
 
-          <Text style={styles.t2}>🔥 Trending Shows</Text>
+           <View style={{
+            width:'100%',
+            display:'flex',
+            flexDirection:'row',
+            gap:20,
+            marginTop:10
+          }}>
+             <Image source={(require('../../assets/images/trend.png'))}
+          style={{width:30,height:30,marginLeft:20,}}/>
+          <Text style={{fontSize:20,fontWeight:"bold",color:'white'}}>Trending shows</Text>
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
              {trending.map(show => renderShowCard(show, onTrendingPress))}
           </ScrollView>
@@ -231,10 +260,20 @@ setSelectedShow(show); // store the clicked show
     onRequestClose={() => SetDetailsScreen(false)}
   >
     <View style={{ flex: 1, backgroundColor: 'gray', padding: 20 }}>
+      <View style={{
+        flexDirection:'row',
+        justifyContent:'space-between'
+      }}>
+        <TouchableOpacity  
+    >
+       <Image source={require('../../assets/images/heart.png')}
+       style={{width:20,height:20,marginLeft:30,marginBottom:20,tintColor:'white'}}/>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => SetDetailsScreen(false)}>
        <Image source={require('../../assets/images/previous.png')}
-       style={{width:20,height:20,marginLeft:300,marginBottom:20,tintColor:'white'}}/>
-      </TouchableOpacity>
+       style={{width:20,height:20,marginRight:20,marginBottom:20,tintColor:'white'}}/>
+      </TouchableOpacity></View>
+      
 
       <Image
         source={{ uri: selectedShow.image?.original || selectedShow.image?.medium || 'https://via.placeholder.com/300x450?text=No+Image' }}
@@ -287,7 +326,14 @@ setSelectedShow(show); // store the clicked show
       source={require('../../assets/images/travel.png')}
        style={{width:20,height:20,marginBottom:20,marginLeft:20}}/>
    </TouchableOpacity>
-  <TouchableOpacity style={styles.btna}>
+  <TouchableOpacity style={styles.btna}    onPress={() => {
+    if (!isInWatchlist(selectedShow.id)) {
+      addToWatchlist(selectedShow);
+      alert(`${selectedShow.name} added to Watchlist ✅`);
+    }else{
+       alert(`${selectedShow.name} already added to Watchlist ✅`);
+    }
+  }}>
     <Text style={{textAlign:"center"}}>Add to Watch list</Text>
     <Image
       source={require('../../assets/images/clapperboard2.png')}
@@ -308,7 +354,7 @@ const styles = StyleSheet.create({
   title:{ fontSize:25, color:'white', marginLeft:20, fontWeight:'bold' },
   searchBox:{ flexDirection:'row', alignItems:'center', backgroundColor:'white', borderRadius:10, width:'85%', height:50, marginTop:20, marginLeft:20, paddingHorizontal:10 },
   searchinput:{ flex:1, height:'100%', fontSize:18, color:'black' },
-  searchButton:{ backgroundColor:'#222', paddingVertical:8, paddingHorizontal:15, borderRadius:8 },
+  searchButton:{  paddingVertical:8, paddingHorizontal:10, borderRadius:8 },
   searchButtonText:{ color:'white', fontSize:18 },
   resultsHeader:{ flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginHorizontal:20, marginTop:20 },
   clearText:{ color:'#ff4444', fontSize:16, fontWeight:'bold' },
