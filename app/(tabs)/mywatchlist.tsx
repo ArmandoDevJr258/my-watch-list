@@ -193,8 +193,12 @@ const fetchCast = async (id) => {
 
       {activeFilter === "completed" && (
  <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>completed</Text>
-          <Text style={styles.emptyText}>No Completed yet.</Text>
+          
+          <Text style={{
+            textAlign:'center',
+            marginTop:200,fontWeight:'bold',
+            fontSize:20
+          }}>No Data yet.</Text>
         </View>
 )}
 
