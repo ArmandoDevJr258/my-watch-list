@@ -11,4 +11,8 @@ const settings = () => {
 
 export default settings
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+  container:{
+    
+  }
+})
