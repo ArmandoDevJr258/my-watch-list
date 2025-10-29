@@ -9,7 +9,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FavoritesProvider } from '../context/FavoritesContext';
 import { WatchlistProvider } from "../context/WatchlistContext";
 
-
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
@@ -52,5 +51,6 @@ export default function TabLayout() {
       />
     </Tabs></WatchlistProvider>
     </FavoritesProvider>
+   
   );
 }
