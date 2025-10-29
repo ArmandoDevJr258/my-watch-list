@@ -205,6 +205,45 @@ const MyWatchlist = () => {
           )}
         </View>
       )}
+      {activeFilter === "favorites" && (
+  <View style={{ marginTop: 10, height: 600 }}>
+    {favorites.length === 0 ? (   // ✅ changed from watchlist to favorites
+      <Text style={{ color: "gray", fontSize: 16, textAlign: "center", marginTop: 40 }}>
+        No shows added to Favorites yet.
+      </Text>
+    ) : (
+      <FlatList
+        data={favorites}
+        keyExtractor={item => item.id.toString()}
+        contentContainerStyle={{ padding: 15 }}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Image
+              source={{ uri: item.image?.medium || "https://via.placeholder.com/100x150?text=No+Image" }}
+              style={styles.showImage}
+            />
+            <View style={styles.infoContainer}>
+              <Text style={styles.showTitle}>{item.name}</Text>
+              <Text style={styles.showGenre}>{item.genres?.join(", ") || "No genre"}</Text>
+              <Text style={styles.showRating}>⭐ {item.rating?.average || "N/A"}</Text>
+            </View>
+
+            <View style={styles.actionsContainer}>
+              <TouchableOpacity onPress={() => removeFromFavorites(item.id)}>
+                <Text style={{
+                  fontSize: 15,
+                  fontWeight: 'bold',
+                  color: 'red',
+                  marginBottom: 10
+                }}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      />
+    )}
+  </View>
+)}
 
       {/* Show Details Modal */}
       {showDetails && selectedShow && (
