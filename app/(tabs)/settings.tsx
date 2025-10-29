@@ -9,10 +9,14 @@ import {
   Platform,
   UIManager,
   Alert,
-  ScrollView
+  ScrollView,
+  Switch
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as MailComposer from 'expo-mail-composer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SettingsProvider } from '../context/SettingsContext';
+import { useSettings } from '../context/SettingsContext';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental &&
@@ -60,8 +64,19 @@ const toggleExpand3 = () => {
     }
   };
 
+   const clearAppData = async () => {
+    try {
+      await AsyncStorage.clear(); // clears all AsyncStorage data
+      Alert.alert("Done", "All app data has been cleared!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to clear app data.");
+      console.log(error);
+    }
+  };
+   const { theme,darkMode, setDarkMode, appearance, setAppearance, dataSaver, setDataSaver } = useSettings();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
         <TouchableOpacity style={{ marginRight: 40, marginTop: 10 }} onPress={sendEmail}>
@@ -74,8 +89,28 @@ const toggleExpand3 = () => {
 
       <View style={styles.settingView}>
         <TouchableOpacity>
-          <View style={styles.setter}>
-            <Text style={styles.setterText}>Dark mode</Text>
+          <View style={{
+            flexDirection:'row',
+            
+             width: '80%',
+              backgroundColor: 'white',
+               height: 50, alignSelf: 'center',
+                borderRadius: 10, marginTop: 20, 
+                justifyContent: 'space-between'
+            
+          }}>
+            <Text style={{
+              marginLeft:80,
+              fontSize:20,
+              fontWeight:'bold',
+              marginTop:10
+            }}>Dark mode</Text>
+             <Switch
+          value={darkMode}
+          onValueChange={(val) => setDarkMode(val)}
+          trackColor={{ false: '#767577', true: 'gray' }}
+          thumbColor={darkMode ? 'blue' : '#f4f3f4'}
+        />
           </View>
         </TouchableOpacity>
 
@@ -85,7 +120,7 @@ const toggleExpand3 = () => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={clearAppData}>
           <View style={styles.setter}>
             <Text style={styles.setterText}>Data & Storage</Text>
           </View>
@@ -177,7 +212,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 25, fontWeight: 'bold', marginLeft: 20 },
   settingView: { width: '100%', marginTop: 20 },
   setter: { width: '80%', backgroundColor: 'white', height: 50, alignSelf: 'center', borderRadius: 10, marginTop: 20, justifyContent: 'center' },
-  setterText: { fontSize: 20, fontWeight: 'bold', textAlign: 'center' },
+  setterText: { fontSize: 20, fontWeight: 'bold', marginLeft:80, },
   content: { padding: 15, backgroundColor: '#fff', marginBottom: 10, borderRadius: 8 },
   question: { fontSize: 18, fontWeight: 'bold', marginVertical: 10 },
   accordionTitle: { fontSize: 16, fontWeight: 'bold' },

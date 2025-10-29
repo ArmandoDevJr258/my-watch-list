@@ -8,12 +8,13 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FavoritesProvider } from '../context/FavoritesContext';
 import { WatchlistProvider } from "../context/WatchlistContext";
-
+import { SettingsProvider } from '../context/SettingsContext';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
 
+    <SettingsProvider>
       <FavoritesProvider>
      <WatchlistProvider>
     <Tabs
@@ -51,6 +52,6 @@ export default function TabLayout() {
       />
     </Tabs></WatchlistProvider>
     </FavoritesProvider>
-   
+   </SettingsProvider>
   );
 }

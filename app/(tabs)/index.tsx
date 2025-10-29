@@ -15,7 +15,8 @@ import { ExpoRouter } from 'expo-router';
 import { useWatchlist } from '../context/WatchlistContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { Linking, Alert } from 'react-native';
-
+import { SettingsProvider } from '../context/SettingsContext';
+import { useSettings } from '../context/SettingsContext';
 export default function HomeScreen() {
   const { addToWatchlist, isInWatchlist } = useWatchlist();
 const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
@@ -30,6 +31,7 @@ const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const [DetailsScreen,SetDetailsScreen]= useState(false);
   const [selectedShow, setSelectedShow] = useState(null);
   const [cast, setCast] = useState([]);
+  const { theme, darkMode, setDarkMode } = useSettings();
 
   useEffect(() => {
   if (selectedShow) fetchCast(selectedShow.id);
@@ -149,7 +151,7 @@ const openYouTubeTrailer = (query) => {
 };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}> 
         <Text style={styles.title}>My Watch List</Text>
 

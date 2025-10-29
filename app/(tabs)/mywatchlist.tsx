@@ -4,6 +4,8 @@ import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWatchlist } from '../context/WatchlistContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { SettingsProvider } from '../context/SettingsContext';
+
 const WATCHED_EPISODES_KEY = 'watchedEpisodes';
 const TOTAL_EPISODES_KEY = 'totalEpisodesMap';
 const MyWatchlist = () => {
