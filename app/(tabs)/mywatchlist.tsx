@@ -22,6 +22,7 @@ const MyWatchlist = () => {
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [watchedEpisodes, setWatchedEpisodes] = useState({});
   const [totalEpisodesMap, setTotalEpisodesMap] = useState({});
+const [completedShows, setCompletedShows] = useState([]);
 
   // --- Fetch functions (UPDATED to cache total episodes) ---
   const fetchSeasons = async (id) => {
@@ -110,22 +111,45 @@ const MyWatchlist = () => {
   };
 
   // --- Mark episode watched/unwatched (FIXED & SAVING) ---
-  const markEpisodeAsWatched = async (showId, episodeId) => {
-    setWatchedEpisodes(prev => {
-      const showWatched = prev[showId] || [];
-      const isWatched = showWatched.includes(episodeId);
-      const updated = isWatched
-        ? showWatched.filter(id => id !== episodeId)
-        : [...showWatched, episodeId];
+const markEpisodeAsWatched = async (showId, episodeId) => {
+  setWatchedEpisodes(prev => {
+    const showWatched = prev[showId] || [];
+    const isWatched = showWatched.includes(episodeId);
+    const updated = isWatched
+      ? showWatched.filter(id => id !== episodeId)
+      : [...showWatched, episodeId];
 
-      const newWatched = { ...prev, [showId]: updated };
+    const newWatched = { ...prev, [showId]: updated };
+    AsyncStorage.setItem(WATCHED_EPISODES_KEY, JSON.stringify(newWatched)).catch(console.error);
 
-      // Save to AsyncStorage
-      AsyncStorage.setItem(WATCHED_EPISODES_KEY, JSON.stringify(newWatched)).catch(err => console.error(err));
+    // 🔥 Check completion progress
+    const total = totalEpisodesMap[showId] || 0;
+    const watchedCount = updated.length;
 
-      return newWatched;
-    });
-  };
+    if (total > 0 && watchedCount === total) {
+      // Mark as completed if 100%
+      setCompletedShows(prevCompleted => {
+        if (!prevCompleted.includes(showId)) {
+          const updatedCompleted = [...prevCompleted, showId];
+          AsyncStorage.setItem('completedShows', JSON.stringify(updatedCompleted));
+          return updatedCompleted;
+        }
+        return prevCompleted;
+      });
+    } else {
+      // Remove from completed if progress drops
+      setCompletedShows(prevCompleted => {
+        const updatedCompleted = prevCompleted.filter(id => id !== showId);
+        AsyncStorage.setItem('completedShows', JSON.stringify(updatedCompleted));
+        return updatedCompleted;
+      });
+    }
+
+    return newWatched;
+  });
+};
+
+
 
   return (
     <View style={styles.container}>
@@ -185,7 +209,7 @@ const MyWatchlist = () => {
 
                     <View style={styles.progressContainer}>
                       <Text style={styles.progressText}>
-                        {progressPercent}% ({watchedCount}/{totalEpisodes})
+                        {progressPercent}%
                       </Text>
                     </View>
 
@@ -309,39 +333,94 @@ const MyWatchlist = () => {
       )}
 
       {/* Progress Modal */}
-      {progressModal && (
-        <Modal transparent animationType="slide" onRequestClose={() => setProgressModal(false)}>
-          <View style={styles.progressModalBackground}>
-            <View style={styles.progressModalContainer}>
-              <Text style={styles.progressModalTitle}>Update Watch Progress</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 12 }} contentContainerStyle={{ paddingHorizontal: 10 }}>
-                {seasons.map(season => (
-                  <TouchableOpacity
-                    key={season.id}
-                    onPress={() => onSeasonPress(season)}
-                    style={[styles.seasonButton, selectedSeason === season.number && styles.activeSeasonButton, { marginRight: 10 }]}
-                  >
-                    <Text style={[styles.seasonButtonText, selectedSeason === season.number && styles.activeSeasonButtonText]}>
-                      Season {season.number}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+   {progressModal && (
+  <Modal
+    transparent
+    animationType="slide"
+    onRequestClose={() => setProgressModal(false)}
+  >
+    <View style={styles.progressModalBackground}>
+      <View style={styles.progressModalContainer}>
+        <Text style={styles.progressModalTitle}>Update Watch Progress</Text>
 
-              <ScrollView style={{ maxHeight: 250, marginTop: 8 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                {episodes.map(ep => (
-                  <TouchableOpacity key={ep.id} style={styles.episodeRow} activeOpacity={0.7}>
-                    <Text style={styles.episodeText}>{`E${ep.number}: ${ep.name}`}</Text>
-                    <TouchableOpacity style={styles.checkButton} onPress={() => markEpisodeAsWatched(selectedShow.id, ep.id)}>
-                      <Image source={require('../../assets/images/check.png')} style={styles.checkIcon} />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      )}
+        {/* Season selector */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginVertical: 12 }}
+          contentContainerStyle={{ paddingHorizontal: 10 }}
+        >
+          {seasons.map(season => (
+            <TouchableOpacity
+              key={season.id}
+              onPress={() => onSeasonPress(season)}
+              style={[
+                styles.seasonButton,
+                selectedSeason === season.number && styles.activeSeasonButton,
+                { marginRight: 10 },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.seasonButtonText,
+                  selectedSeason === season.number &&
+                    styles.activeSeasonButtonText,
+                ]}
+              >
+                Season {season.number}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Episode list */}
+        <ScrollView
+          style={{ maxHeight: 250, marginTop: 8 }}
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+        >
+          {episodes.map(ep => {
+  const isWatched = watchedEpisodes[selectedShow.id]?.includes(ep.id); // ✅ correct
+  return (
+    <TouchableOpacity
+      key={ep.id}
+      style={styles.episodeRow}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.episodeText}>
+        {`E${ep.number}: ${ep.name}`}
+      </Text>
+
+      {/* Check button */}
+      <TouchableOpacity
+        style={[
+          styles.checkButton,
+          isWatched && { backgroundColor: '#4CAF50', borderRadius: 6 },
+        ]}
+        onPress={() => markEpisodeAsWatched(selectedShow.id, ep.id)}
+      >
+        <Image
+          source={
+            isWatched
+              ? require('../../assets/images/check.png') // ✅ watched
+              : require('../../assets/images/square.png') // ⬜ not watched
+          }
+          style={[
+            styles.checkIcon,
+            isWatched ,
+          ]}
+        />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+})}
+
+        </ScrollView>
+      </View>
+    </View>
+  </Modal>
+)}
+
     </View>
   );
 };
@@ -363,7 +442,7 @@ const styles = StyleSheet.create({
   showGenre: { color: "#bbb", fontSize: 12, marginVertical: 3 },
   showRating: { color: "gold", fontSize: 14 },
   progressContainer: { width: 70, alignItems: "center", justifyContent: "center" },
-  progressText: { fontSize: 18, marginTop: -10, color:'green', fontWeight:'bold' },
+  progressText: { fontSize: 25, marginTop: -10, color:'green', fontWeight:'bold' },
   actionsContainer: { width: 60, alignItems: "center", justifyContent: "center" },
   playIcon: { width: 35, height: 35, tintColor: "white" },
   removeText: { color: "tomato", fontSize: 12, marginTop: 25, textAlign: "center" },
