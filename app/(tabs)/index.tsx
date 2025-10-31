@@ -8,7 +8,8 @@ import {
   ActivityIndicator, 
   TouchableOpacity,
   Keyboard,
-  Modal
+  Modal,
+  FlatList
 } from 'react-native';
 import { Image } from 'expo-image';
 import { ExpoRouter } from 'expo-router';
@@ -20,7 +21,7 @@ import { useSettings } from '../context/SettingsContext';
 export default function HomeScreen() {
   const { addToWatchlist, isInWatchlist } = useWatchlist();
 const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-
+const { watchlist, removeFromWatchlist } = useWatchlist();
 
   const [query, setQuery] = useState('');
   const [shows, setShows] = useState([]);
@@ -32,6 +33,26 @@ const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const [selectedShow, setSelectedShow] = useState(null);
   const [cast, setCast] = useState([]);
   const { theme, darkMode, setDarkMode } = useSettings();
+
+
+  const handleSurpriseMe = async () => {
+  try {
+    const randomPage = Math.floor(Math.random() * 100); // TVMaze has ~100 pages
+    const res = await fetch(`https://api.tvmaze.com/shows?page=${randomPage}`);
+    const data = await res.json();
+
+    if (data.length === 0) return;
+
+    const randomIndex = Math.floor(Math.random() * data.length);
+    const randomShow = data[randomIndex];
+
+    setSelectedShow(randomShow); // open details modal
+    SetDetailsScreen(true);
+  } catch (error) {
+    console.error("Error fetching surprise show:", error);
+  }
+};
+
 
   useEffect(() => {
   if (selectedShow) fetchCast(selectedShow.id);
@@ -111,20 +132,34 @@ const fetchCast = async (id) => {
     setShows([]);
   };
 
- const renderShowCard = (show, onPress) => (
-  <TouchableOpacity onPress={() => onPress(show)}>
-    <View key={show.id} style={styles.moviecontainer}>
-      <Image
-        source={{ uri: show.image?.medium || 'https://via.placeholder.com/150x200?text=No+Image' }}
-        style={styles.houseimg}
-      />
-      <Text style={styles.movietext}>{show.name}</Text>
-      <Text style={styles.movietext2}>
-        ⭐ {show.rating?.average ? show.rating.average.toFixed(1) : 'N/A'}
-      </Text>
-    </View>
+// Helper function to render a show card with image + name
+const renderShowCard = (show, onPress) => (
+  <TouchableOpacity
+    key={show.id}
+    style={{ marginHorizontal: 10 }}
+    onPress={() => onPress(show)}
+  >
+    <Image
+      source={{ uri: show.image?.medium || "https://via.placeholder.com/150x200?text=No+Image" }}
+      style={{ width: 120, height: 120, borderRadius: 10 }}
+    />
+    <Text
+      style={{
+        color: "white",
+        fontSize: 14,
+        fontWeight: "600",
+        marginTop: 5,
+        textAlign: "center",
+        width: 120,
+      }}
+      numberOfLines={1}
+    >
+      {show.name}
+    </Text>
   </TouchableOpacity>
 );
+
+
 const onTopRatedPress = (show) => {
   setSelectedShow(show); // store the clicked show
   SetDetailsScreen(true); // open modal
@@ -175,6 +210,7 @@ const openYouTubeTrailer = (query) => {
       {loading && <ActivityIndicator color="white" size="large" style={{ marginTop: 20 }} />}
 
       {/* Search Results */}
+{/* Search Results */}
 {!loading && shows.length > 0 && (
   <>
     <View style={styles.resultsHeader}>
@@ -188,8 +224,8 @@ const openYouTubeTrailer = (query) => {
       {shows.map((item, index) => {
         const show = item.show;
         return (
-          <View key={index} style={styles.showCard}>
-            {/* Image + Info on the left */}
+          <View key={show.id || index} style={styles.showCard}>
+            {/* Image + Info */}
             <View style={{ flexDirection: 'row', flex: 1 }}>
               <Image
                 source={{ uri: show.image?.medium || 'https://via.placeholder.com/150x200?text=No+Image' }}
@@ -206,18 +242,37 @@ const openYouTubeTrailer = (query) => {
               </View>
             </View>
 
-            {/* Buttons on the right in a column */}
+            {/* Buttons */}
             <View style={styles.buttonColumn}>
-              <TouchableOpacity style={styles.addButton}>
+              {/* Add to Watchlist */}
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => {
+                  if (!isInWatchlist(show.id)) {
+                    addToWatchlist(show);
+                    alert(`${show.name} added to Watchlist ✅`);
+                  } else {
+                    alert(`${show.name} already added to Watchlist ✅`);
+                  }
+                }}
+              >
                 <Image 
                   source={require('../../assets/images/add.png')}
                   style={styles.addIcon}
                 />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.infoButton}>
+
+              {/* Info Button */}
+              <TouchableOpacity
+                style={styles.infoButton}
+                onPress={() => {
+                  setSelectedShow(show);
+                  SetDetailsScreen(true);
+                }}
+              >
                 <Image 
                   source={require('../../assets/images/info.png')}
-                  style={styles.addIcon} // reuse size
+                  style={styles.addIcon}
                 />
               </TouchableOpacity>
             </View>
@@ -225,156 +280,243 @@ const openYouTubeTrailer = (query) => {
         );
       })}
     </ScrollView>
-
-
   </>
 )}
 
 
 
-      {/* Default content */}
-      {!loading && shows.length === 0 && (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={{
-            width:'100%',
-            display:'flex',
-            flexDirection:'row',
-            gap:20,
-            marginTop:10
-          }}>
-             <Image source={(require('../../assets/images/popular.png'))}
-          style={{width:30,height:30,marginLeft:20,}}/>
-          <Text style={{fontSize:20,fontWeight:"bold",color:'white'}}>Top Rated Shows</Text>
-          </View>
-         
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-           {topRated.map(show => renderShowCard(show, onTopRatedPress))}
-          </ScrollView>
 
-           <View style={{
-            width:'100%',
-            display:'flex',
-            flexDirection:'row',
-            gap:20,
-            marginTop:10
-          }}>
-             <Image source={(require('../../assets/images/trend.png'))}
-          style={{width:30,height:30,marginLeft:20,}}/>
-          <Text style={{fontSize:20,fontWeight:"bold",color:'white'}}>Trending shows</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-             {trending.map(show => renderShowCard(show, onTrendingPress))}
-          </ScrollView>
+      {/* Default content */}
+    {!loading && shows.length === 0 && (
+  <ScrollView showsVerticalScrollIndicator={false}>
+    <View style={{
+      flexDirection:'row',
+      justifyContent:'space-between',
+    
+    }}>
+      <Text style={{
+        marginLeft:20,
+        marginTop:20,
+        color:'white',
+        
+      }}>Something new?</Text> 
+      <TouchableOpacity 
+ style={{
+        marginRight:40,
+        marginTop:20,
+        flexDirection:'row'
+      }}
+  onPress={handleSurpriseMe}
+><Image
+source={require('../../assets/images/casino.png')}
+style={{width:25,height:25}}/>
+  <Text style={{
+    marginLeft:5,
+    color:'white',
+    fontWeight:'bold'
+  }}> Surprise Me</Text>
+</TouchableOpacity>
+</View>
+    
+    <View style={{ marginTop: 10, marginBottom: 10 }}>
+      <Text style={{ fontSize: 22, fontWeight: "bold", color: "white", marginLeft: 20 }}>
+        🎬 Currently Watching
+      </Text>
+
+      {watchlist.length === 0 ? (
+        <Text style={{ color: "gray", fontSize: 16, textAlign: "center", marginTop: 20 }}>
+          No shows added yet.
+        </Text>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+          {watchlist.map((item) => (
+            <TouchableOpacity key={item.id} style={{ marginHorizontal: 10 }}>
+              <Image
+                source={{ uri: item.image?.medium || "https://via.placeholder.com/150x200?text=No+Image" }}
+                style={{ width: 120, height: 120, borderRadius: 10 }}
+              />
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: "600",
+                  marginTop: 5,
+                  textAlign: "center",
+                  width: 120,
+                }}
+                numberOfLines={1}
+              >
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       )}
+    </View>
+
+    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginLeft: 20 }}>
+      <Image
+        source={require("../../assets/images/popular.png")}
+        style={{ width: 30, height: 30, marginRight: 10 }}
+      />
+      
+      
+      <Text style={{ fontSize: 20, fontWeight: "bold", color: "white" }}>
+        Top Rated Shows
+      </Text>
+    </View>
+    
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {topRated.map(show => renderShowCard(show, onTopRatedPress))}
+      
+    </ScrollView>
+
+
+    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginLeft: 20 }}>
+      <Image
+        source={require("../../assets/images/trend.png")}
+        style={{ width: 30, height: 30, marginRight: 10 }}
+      />
+      <Text style={{ fontSize: 20, fontWeight: "bold", color: "white" }}>
+        Trending Shows
+      </Text>
+    </View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {trending.map(show => renderShowCard(show, onTrendingPress))}
+    </ScrollView>
+   
+  </ScrollView>
+  
+)}
+
 
       
-        {DetailsScreen && selectedShow && (
+{DetailsScreen && selectedShow && (
   <Modal
+    visible
     animationType="slide"
-    transparent={false}
     onRequestClose={() => SetDetailsScreen(false)}
   >
     <View style={{ flex: 1, backgroundColor: 'gray', padding: 20 }}>
-      <View style={{
-        flexDirection:'row',
-        justifyContent:'space-between'
-      }}>
+      
+      {/* Top Buttons */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
         <TouchableOpacity
-        onPress={() => {
-  if (!isFavorite(selectedShow.id)) {
-    addToFavorites(selectedShow);
-    alert(`${selectedShow.name} added to Favorites ✅`);
-  } else {
-    alert(`${selectedShow.name} is already in Favorites ✅`);
-  }
-}}  
-    >
-       <Image source={require('../../assets/images/heart.png')}
-       style={{width:20,height:20,marginLeft:30,marginBottom:20,tintColor:'white'}}/>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => SetDetailsScreen(false)}>
-       <Image source={require('../../assets/images/previous.png')}
-       style={{width:20,height:20,marginRight:20,marginBottom:20,tintColor:'white'}}/>
-      </TouchableOpacity></View>
-      
+          onPress={() => {
+            if (!isFavorite(selectedShow.id)) {
+              addToFavorites(selectedShow);
+              alert(`${selectedShow.name} added to Favorites ✅`);
+            } else {
+              alert(`${selectedShow.name} is already in Favorites ✅`);
+            }
+          }}
+        >
+          <Image
+            source={require('../../assets/images/heart.png')}
+            style={{ width: 20, height: 20, tintColor: 'white' }}
+          />
+        </TouchableOpacity>
 
-      <Image
-        source={{ uri: selectedShow.image?.original || selectedShow.image?.medium || 'https://via.placeholder.com/300x450?text=No+Image' }}
-        style={{ width: '95%', height: 200, borderRadius: 10, marginBottom: 20 ,alignSelf:'center'}}
-      />
+        <TouchableOpacity onPress={() => SetDetailsScreen(false)}>
+          <Image
+            source={require('../../assets/images/previous.png')}
+            style={{ width: 20, height: 20, tintColor: 'white' }}
+          />
+        </TouchableOpacity>
+      </View>
 
-<Text style={{fontSize:18,fontWeight:'bold',color:'white'}}>Show Name:</Text>
-      <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'blue', marginBottom: 10 }}>
-        {selectedShow.name}
-      </Text>
-      <Text style={{ fontSize: 18, color: 'gold', marginBottom: 10 }}>
-        ⭐ {selectedShow.rating?.average || 'N/A'}
-      </Text>
-      <Text style={{ fontSize: 16, color: 'lightblue', marginBottom: 10 }}>
-        {selectedShow.genres?.join(', ') || 'No genres'}
-      </Text>
-      <Text style={{fontSize:18,fontWeight:'bold',color:'white'}}>Summary :</Text>
-     <ScrollView 
-  style={{ maxHeight: 120, marginVertical: 10 }} 
-  contentContainerStyle={{ padding: 10 }}
->
-  <Text style={{ fontSize: 16, color: 'lightblue', lineHeight: 22 }}>
-    {selectedShow.summary?.replace(/<[^>]+>/g, '') || 'No summary available'}
-  </Text>
-</ScrollView>
+      {/* Image + Summary Side by Side */}
+      <View style={{ flexDirection: 'row', marginBottom: 15 }}>
+        {/* Show Image */}
+        <Image
+          source={{
+            uri: selectedShow.image?.original || selectedShow.image?.medium || 'https://via.placeholder.com/300x450?text=No+Image',
+          }}
+          style={{ width: '40%', height: 200, borderRadius: 10, marginRight: 15 }}
+          resizeMode="contain"
+        />
 
-      
-<Text style={{ fontSize:18,fontWeight:'bold',color:'white'}}>🎭 Cast :</Text>
-<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-  {cast.map((item, index) => (
-    <View key={index} style={{ alignItems: 'center', marginRight: 10 }}>
-      <Image
-        source={{ uri: item.person.image?.medium || 'https://via.placeholder.com/80x100?text=No+Image' }}
-        style={{ width: 80, height: 100, borderRadius: 8 }}
-      />
-      <Text style={{ color: 'white', fontSize: 12, marginTop: 5 }}>
-        {item.person.name}
-      </Text>
-    </View>
-  ))}
-</ScrollView>
+        {/* Info + Summary */}
+        <View style={{ flex: 1, justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'blue', marginBottom: 5 }}>
+            {selectedShow.name}
+          </Text>
 
-      <View style={{
-        flexDirection:'row',
-        gap:10,
-        marginTop:10}}>
-   <TouchableOpacity style={styles.btna}
-   onPress={() => openYouTubeTrailer(selectedShow.name + " trailer")}>
-    <Text style={{textAlign:"center"}}>Watch Trailer</Text>
-    <Image
-      source={require('../../assets/images/travel.png')}
-       style={{width:20,height:20,marginBottom:20,marginLeft:20}}/>
-   </TouchableOpacity>
-  <TouchableOpacity style={styles.btna}    onPress={() => {
-    if (!isInWatchlist(selectedShow.id)) {
-      addToWatchlist(selectedShow);
-      alert(`${selectedShow.name} added to Watchlist ✅`);
-    }else{
-       alert(`${selectedShow.name} already added to Watchlist ✅`);
-    }
-  }}>
-    <Text style={{textAlign:"center"}}>Add to Watch list</Text>
-    <Image
-      source={require('../../assets/images/clapperboard2.png')}
-       style={{width:20,height:20,marginBottom:20,marginLeft:15}}/>
-   </TouchableOpacity>
+          <Text style={{ fontSize: 16, color: 'gold', marginBottom: 5 }}>
+            ⭐ {selectedShow.rating?.average || 'N/A'}
+          </Text>
+
+          <Text style={{ fontSize: 14, color: 'lightblue', marginBottom: 5 }}>
+            {selectedShow.genres?.join(', ') || 'No genres'}
+          </Text>
+
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'white' }}>Summary:</Text>
+          <ScrollView style={{ maxHeight: 140 }}>
+            <Text style={{ fontSize: 14, color: 'lightblue', lineHeight: 20 }}>
+              {selectedShow.summary?.replace(/<[^>]+>/g, '') || 'No summary available'}
+            </Text>
+          </ScrollView>
+        </View>
+      </View>
+
+      {/* Cast */}
+      <Text style={{ fontSize: 16, fontWeight: 'bold', color: 'white', marginBottom: 10 }}>🎭 Cast:</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 15 }}>
+        {cast.map((item, index) => (
+          <View key={index} style={{ alignItems: 'center', marginRight: 10 }}>
+            <Image
+              source={{ uri: item.person.image?.medium || 'https://via.placeholder.com/80x100?text=No+Image' }}
+              style={{ width: 80, height: 100, borderRadius: 8 }}
+            />
+            <Text style={{ fontSize: 12, color: 'white', marginTop: 5, textAlign: 'center' }}>
+              {item.person.name}
+            </Text>
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* Buttons */}
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TouchableOpacity
+          style={styles.btna}
+          onPress={() => openYouTubeTrailer(selectedShow.name + " trailer")}
+        >
+          <Text style={{ textAlign: 'center' }}>Watch Trailer</Text>
+          <Image
+            source={require('../../assets/images/travel.png')}
+            style={{ width: 20, height: 20, marginBottom: 20, marginLeft: 20 }}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.btna}
+          onPress={() => {
+            if (!isInWatchlist(selectedShow.id)) {
+              addToWatchlist(selectedShow);
+              alert(`${selectedShow.name} added to Watchlist ✅`);
+            } else {
+              alert(`${selectedShow.name} already added to Watchlist ✅`);
+            }
+          }}
+        >
+          <Text style={{ textAlign: 'center' }}>Add to Watchlist</Text>
+          <Image
+            source={require('../../assets/images/clapperboard2.png')}
+            style={{ width: 20, height: 20, marginBottom: 20, marginLeft: 15 }}
+          />
+        </TouchableOpacity>
       </View>
     </View>
   </Modal>
 )}
-     
+
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:{ flex:1, backgroundColor:'gray', paddingBottom:50 },
+  container:{ flex:1, backgroundColor:'gray', },
   header:{ width:'100%', marginTop:20 },
   title:{ fontSize:25, color:'white', marginLeft:20, fontWeight:'bold' },
   searchBox:{ flexDirection:'row', alignItems:'center', backgroundColor:'white', borderRadius:10, width:'85%', height:50, marginTop:20, marginLeft:20, paddingHorizontal:10 },
@@ -386,7 +528,7 @@ const styles = StyleSheet.create({
   t1:{ fontSize:20, color:'white', fontWeight:'600' },
   t2:{ fontSize:20, color:'white', marginTop:20, marginLeft:20, fontWeight:'600' },
   resultsScroll:{ marginTop:10, paddingHorizontal:20 },
-  moviecontainer:{ position:'relative', width:200, height:170, margin:10, borderRadius:15, overflow:'hidden' },
+  moviecontainer:{ position:'relative', width:100, height:100, margin:10, borderRadius:15, overflow:'hidden' },
   houseimg:{ width:'100%', height:'100%', borderRadius:15 },
   movietext:{ position:'absolute', bottom:25, left:10, color:'green', fontSize:10, fontWeight:'bold', backgroundColor:'rgba(0,0,0,0.5)', paddingHorizontal:8, paddingVertical:4, borderRadius:8 },
   movietext2:{ position:'absolute', bottom:5, left:10, color:'gold', fontSize:12, fontWeight:'bold', paddingHorizontal:8, paddingVertical:4, borderRadius:8 },

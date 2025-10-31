@@ -20,6 +20,7 @@ const MyWatchlist = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [progressModal, setProgressModal] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(null);
+  
   const [watchedEpisodes, setWatchedEpisodes] = useState({});
   const [totalEpisodesMap, setTotalEpisodesMap] = useState({});
 const [completedShows, setCompletedShows] = useState([]);
@@ -257,7 +258,7 @@ const markEpisodeAsWatched = async (showId, episodeId) => {
             <View style={styles.actionsContainer}>
               <TouchableOpacity onPress={() => removeFromFavorites(item.id)}>
                 <Text style={{
-                  fontSize: 15,
+                  fontSize: 12,
                   fontWeight: 'bold',
                   color: 'red',
                   marginBottom: 10
@@ -421,6 +422,8 @@ const markEpisodeAsWatched = async (showId, episodeId) => {
   </Modal>
 )}
 
+
+
     </View>
   );
 };
@@ -442,7 +445,7 @@ const styles = StyleSheet.create({
   showGenre: { color: "#bbb", fontSize: 12, marginVertical: 3 },
   showRating: { color: "gold", fontSize: 14 },
   progressContainer: { width: 70, alignItems: "center", justifyContent: "center" },
-  progressText: { fontSize: 25, marginTop: -10, color:'green', fontWeight:'bold' },
+  progressText: { fontSize: 20, marginTop: -10, color:'green', fontWeight:'bold' },
   actionsContainer: { width: 60, alignItems: "center", justifyContent: "center" },
   playIcon: { width: 35, height: 35, tintColor: "white" },
   removeText: { color: "tomato", fontSize: 12, marginTop: 25, textAlign: "center" },

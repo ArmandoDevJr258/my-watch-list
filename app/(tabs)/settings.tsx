@@ -28,6 +28,7 @@ const Settings = () => {
   const [expanded, setExpanded] = useState(false);
   const [expanded2, setExpanded2] = useState(false);
   const [expanded3, setExpanded3] = useState(false);
+  const [apearence,setapearence]= useState(false);
 
 const toggleExpand = () => {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -114,7 +115,7 @@ const toggleExpand3 = () => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={()=>setapearence(true)}>
           <View style={styles.setter}>
             <Text style={styles.setterText}>Appearance</Text>
           </View>
@@ -198,6 +199,55 @@ const toggleExpand3 = () => {
               </View>
             )}
           </ScrollView>
+        </Modal>
+      )}
+      {apearence&&(
+        <Modal
+        transparent
+        onRequestClose={()=>setapearence(false)}>
+          <View style={{
+            width:'90%',
+            height:400,
+            marginTop:50,
+            backgroundColor:'gray',
+            borderRadius:10,
+            alignSelf:'center'
+          }}>
+            <TouchableOpacity onPress={clearAppData}>
+          <View style={{
+            flexDirection:'row',
+            
+             width: '80%',
+              backgroundColor: 'white',
+               height: 50, alignSelf: 'center',
+                borderRadius: 10, marginTop: 20, 
+                justifyContent: 'space-between'
+            
+          }}>
+            <Text style={styles.setterText}>Sound Efects</Text>
+            <Switch
+          value={darkMode}
+          onValueChange={(val) => setDarkMode(val)}
+          trackColor={{ false: '#767577', true: 'gray' }}
+          thumbColor={darkMode ? 'blue' : '#f4f3f4'}
+        />
+          </View>
+        </TouchableOpacity>
+
+         <TouchableOpacity>
+          <View style={styles.setter}>
+            <Text style={styles.setterText}>Help & Support</Text>
+          </View>
+        </TouchableOpacity>
+
+         <TouchableOpacity >
+          <View style={styles.setter}>
+            <Text style={styles.setterText}>Font Size</Text>
+          </View>
+        </TouchableOpacity>
+      
+      
+          </View>
         </Modal>
       )}
     </View>
