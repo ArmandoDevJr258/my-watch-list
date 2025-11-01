@@ -4,13 +4,14 @@ import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWatchlist } from '../context/WatchlistContext';
 import { useFavorites } from '../context/FavoritesContext';
-import { SettingsProvider } from '../context/SettingsContext';
+import { useSettings } from '../context/SettingsContext';
 
 const WATCHED_EPISODES_KEY = 'watchedEpisodes';
 const TOTAL_EPISODES_KEY = 'totalEpisodesMap';
 const MyWatchlist = () => {
   const { watchlist, removeFromWatchlist } = useWatchlist();
   const { favorites, removeFromFavorites } = useFavorites();
+   const { theme } = useSettings();
 
   const [selectedShow, setSelectedShow] = useState(null);
   const [cast, setCast] = useState([]);
@@ -153,10 +154,10 @@ const markEpisodeAsWatched = async (showId, episodeId) => {
 
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>My Watch List</Text>
+        <Text style={[styles.title,{ color: theme.text }]}>My Watch List</Text>
         <Image
           source={require('../../assets/images/stats.png')}
           style={{ width: 30, height: 30, tintColor: 'blue' }}

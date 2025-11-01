@@ -32,8 +32,7 @@ const { watchlist, removeFromWatchlist } = useWatchlist();
   const [DetailsScreen,SetDetailsScreen]= useState(false);
   const [selectedShow, setSelectedShow] = useState(null);
   const [cast, setCast] = useState([]);
-  const { theme, darkMode, setDarkMode } = useSettings();
-
+ const { theme } = useSettings();
 
   const handleSurpriseMe = async () => {
   try {
@@ -188,7 +187,7 @@ const openYouTubeTrailer = (query) => {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}> 
-        <Text style={styles.title}>My Watch List</Text>
+        <Text  style={[styles.title, { color: theme.text }]}>My Watch List</Text>
 
         <View style={styles.searchBox}>
           <TextInput
@@ -214,7 +213,7 @@ const openYouTubeTrailer = (query) => {
 {!loading && shows.length > 0 && (
   <>
     <View style={styles.resultsHeader}>
-      <Text style={styles.t1}>Search Results</Text>
+      <Text style={[styles.searchresults, { color: theme.text }]}>Search Results</Text>
       <TouchableOpacity onPress={clearResults}>
         <Text style={styles.clearText}>Clear</Text>
       </TouchableOpacity>
@@ -294,32 +293,21 @@ const openYouTubeTrailer = (query) => {
       justifyContent:'space-between',
     
     }}>
-      <Text style={{
-        marginLeft:20,
-        marginTop:20,
-        color:'white',
-        
-      }}>Something new?</Text> 
+      <Text style={[styles.somethingnew, { color: theme.text }]}>Something new?</Text> 
       <TouchableOpacity 
- style={{
-        marginRight:40,
-        marginTop:20,
-        flexDirection:'row'
-      }}
+style={{flexDirection:'row',marginRight:40,
+  marginTop:15
+}}
   onPress={handleSurpriseMe}
 ><Image
 source={require('../../assets/images/casino.png')}
 style={{width:25,height:25}}/>
-  <Text style={{
-    marginLeft:5,
-    color:'white',
-    fontWeight:'bold'
-  }}> Surprise Me</Text>
+  <Text style={[styles.suprisebtn, { color: theme.text }]}> Surprise Me</Text>
 </TouchableOpacity>
 </View>
     
     <View style={{ marginTop: 10, marginBottom: 10 }}>
-      <Text style={{ fontSize: 22, fontWeight: "bold", color: "white", marginLeft: 20 }}>
+      <Text style={[styles.currentlywatching, { color: theme.text }]}>
         🎬 Currently Watching
       </Text>
 
@@ -361,7 +349,7 @@ style={{width:25,height:25}}/>
       />
       
       
-      <Text style={{ fontSize: 20, fontWeight: "bold", color: "white" }}>
+      <Text style={[styles.topratedshows, { color: theme.text }]}>
         Top Rated Shows
       </Text>
     </View>
@@ -377,7 +365,7 @@ style={{width:25,height:25}}/>
         source={require("../../assets/images/trend.png")}
         style={{ width: 30, height: 30, marginRight: 10 }}
       />
-      <Text style={{ fontSize: 20, fontWeight: "bold", color: "white" }}>
+      <Text style={[styles.trendingsshows, { color: theme.text }]}>
         Trending Shows
       </Text>
     </View>
@@ -583,5 +571,17 @@ addIcon: {
     borderRadius:10,
     flexDirection:'row'
 
-  }
+  },
+  searchresults:{},
+  somethingnew:{marginLeft:20,marginTop:20},
+  suprisebtn:{
+    flexDirection:'row',
+    marginRight:15,
+   color:'white',
+    fontWeight:'bold',
+    fontSize:20
+  },
+  currentlywatching:{fontSize:25, color:'white', marginLeft:20, fontWeight:'bold'},
+  topratedshows:{fontSize:25, color:'white', fontWeight:'bold'},
+  trendingsshows:{fontSize:25, color:'white', fontWeight:'bold'},
 });
