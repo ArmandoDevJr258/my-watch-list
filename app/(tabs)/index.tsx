@@ -18,10 +18,21 @@ import { useFavorites } from '../context/FavoritesContext';
 import { Linking, Alert } from 'react-native';
 import { SettingsProvider } from '../context/SettingsContext';
 import { useSettings } from '../context/SettingsContext';
+import * as Font from 'expo-font';
+import { useFonts, Roboto_400Regular, Roboto_700Bold } from '@expo-google-fonts/roboto';
+
+
+
+
+
+
+
 export default function HomeScreen() {
   const { addToWatchlist, isInWatchlist } = useWatchlist();
 const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 const { watchlist, removeFromWatchlist } = useWatchlist();
+
+const { theme, currentFont } = useSettings();
 
   const [query, setQuery] = useState('');
   const [shows, setShows] = useState([]);
@@ -32,7 +43,7 @@ const { watchlist, removeFromWatchlist } = useWatchlist();
   const [DetailsScreen,SetDetailsScreen]= useState(false);
   const [selectedShow, setSelectedShow] = useState(null);
   const [cast, setCast] = useState([]);
- const { theme } = useSettings();
+
 
   const handleSurpriseMe = async () => {
   try {
@@ -187,7 +198,7 @@ const openYouTubeTrailer = (query) => {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}> 
-        <Text  style={[styles.title, { color: theme.text }]}>My Watch List</Text>
+        <Text  style={[styles.title, { fontFamily: currentFont, color: theme.text }]}>My Watch List</Text>
 
         <View style={styles.searchBox}>
           <TextInput

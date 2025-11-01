@@ -31,7 +31,9 @@ const Settings = () => {
   const [expanded4, setExpanded4] = useState(false);
   const [apearence,setapearence]= useState(false);
   const [themes,setthemes]= useState(false)
-  const { currentTheme, setCurrentTheme } = useSettings();
+  const [font,setfont]= useState(false);
+
+  const { currentTheme, setCurrentTheme ,currentFont,setCurrentFont } = useSettings();
   
 
 const toggleExpand = () => {
@@ -286,7 +288,7 @@ const toggleExpand4 = () => {
 
       
 
-         <TouchableOpacity >
+         <TouchableOpacity onPress={()=>setfont(true)}>
           <View style={styles.setter}>
             <Text style={styles.setterText}>Font Size</Text>
           </View>
@@ -399,6 +401,135 @@ const toggleExpand4 = () => {
     </View>
   </Modal>
 )}
+
+{font && (
+  <Modal
+    transparent
+    onRequestClose={() => setfont(false)}
+  >
+    <View
+      style={{
+        width: '90%',
+        height: 500,
+        backgroundColor: theme.background,
+        alignSelf: 'center',
+        marginTop: 50,
+        borderRadius: 10,
+        padding: 20,
+      }}
+    >
+      {/* Header */}
+      <View style={{ flexDirection: 'row', gap: 80, marginTop: 20 }}>
+        <TouchableOpacity onPress={() => setfont(false)}>
+          <Image
+            source={require('../../assets/images/previous.png')}
+            style={{
+              width: 20,
+              height: 20,
+              marginLeft: 20,
+              marginTop: 5,
+              tintColor: theme.text,
+            }}
+          />
+        </TouchableOpacity>
+        <Text style={[styles.themes, { color: theme.text }]}>Fonts</Text>
+      </View>
+
+      {/* Font options */}
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('System')}>
+        <Text style={[styles.themetext, { fontFamily: 'System', color: theme.text }]}>System</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'System'}
+          onValueChange={() => setCurrentFont('System')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('Roboto')}>
+        <Text style={[styles.themetext, { fontFamily: 'Roboto', color: theme.text }]}>Roboto</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'Roboto'}
+          onValueChange={() => setCurrentFont('Roboto')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('Montserrat')}>
+        <Text style={[styles.themetext, { fontFamily: 'Montserrat', color: theme.text }]}>Montserrat</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'Montserrat'}
+          onValueChange={() => setCurrentFont('Montserrat')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('OpenSans')}>
+        <Text style={[styles.themetext, { fontFamily: 'OpenSans', color: theme.text }]}>OpenSans</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'OpenSans'}
+          onValueChange={() => setCurrentFont('OpenSans')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('Lobster')}>
+        <Text style={[styles.themetext, { fontFamily: 'Lobster', color: theme.text }]}>Lobster</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'Lobster'}
+          onValueChange={() => setCurrentFont('Lobster')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('Oswald')}>
+        <Text style={[styles.themetext, { fontFamily: 'Oswald', color: theme.text }]}>Oswald</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'Oswald'}
+          onValueChange={() => setCurrentFont('Oswald')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('Poppins')}>
+        <Text style={[styles.themetext, { fontFamily: 'Poppins', color: theme.text }]}>Poppins</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'Poppins'}
+          onValueChange={() => setCurrentFont('Poppins')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('Lato')}>
+        <Text style={[styles.themetext, { fontFamily: 'Lato', color: theme.text }]}>Lato</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'Lato'}
+          onValueChange={() => setCurrentFont('Lato')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('Raleway')}>
+        <Text style={[styles.themetext, { fontFamily: 'Raleway', color: theme.text }]}>Raleway</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'Raleway'}
+          onValueChange={() => setCurrentFont('Raleway')}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btnsetheme} onPress={() => setCurrentFont('Ubuntu')}>
+        <Text style={[styles.themetext, { fontFamily: 'Ubuntu', color: theme.text }]}>Ubuntu</Text>
+        <Switch
+          style={styles.switchbtn}
+          value={currentFont === 'Ubuntu'}
+          onValueChange={() => setCurrentFont('Ubuntu')}
+        />
+      </TouchableOpacity>
+
+    </View>
+  </Modal>
+)}
+
 
     </View>
   );
