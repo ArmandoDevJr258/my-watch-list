@@ -288,9 +288,9 @@ const toggleExpand4 = () => {
 
       
 
-         <TouchableOpacity onPress={()=>setfont(true)}>
+         <TouchableOpacity onPress={()=>setfont(false)}>
           <View style={styles.setter}>
-            <Text style={styles.setterText}>Font Size</Text>
+            <Text style={styles.setterText}>Font Family</Text>
           </View>
         </TouchableOpacity>
 
@@ -410,8 +410,8 @@ const toggleExpand4 = () => {
     <View
       style={{
         width: '90%',
-        height: 500,
-        backgroundColor: theme.background,
+        height: 700,
+        backgroundColor: 'gray',
         alignSelf: 'center',
         marginTop: 50,
         borderRadius: 10,

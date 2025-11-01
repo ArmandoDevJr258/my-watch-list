@@ -19,7 +19,13 @@ import { Linking, Alert } from 'react-native';
 import { SettingsProvider } from '../context/SettingsContext';
 import { useSettings } from '../context/SettingsContext';
 import * as Font from 'expo-font';
-import { useFonts, Roboto_400Regular, Roboto_700Bold } from '@expo-google-fonts/roboto';
+import { 
+  Roboto_400Regular, // already imported
+  Roboto_700Bold 
+} from '@expo-google-fonts/roboto';
+import { Montserrat_400Regular } from '@expo-google-fonts/montserrat';
+import { Lobster_400Regular } from '@expo-google-fonts/lobster';
+import { OpenSans_400Regular } from '@expo-google-fonts/open-sans';
 
 
 
