@@ -23,8 +23,9 @@ Users can:
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/abe02bf2-656b-4c7b-b7b9-f598ce641491"" style="width: 20%; max-width: 200px; margin: 5px;" />
-  <img src="https://github.com/user-attachments/assets/a335d75a-09fa-4174-936c-b6688d3b5b11"" style="width: 20%; max-width: 200px; margin: 5px;" />
+  <img src="https://github.com/user-attachments/assets/986af9d5-09b6-4afc-9c05-e41b8b000d6b"" style="width: 20%; max-width: 200px; margin: 5px;" />
   <img src="https://github.com/user-attachments/assets/88ca7549-55a6-48a0-b259-5c386cb7ab4c"" style="width: 20%; max-width: 200px; margin: 5px;" />
   <img src="https://github.com/user-attachments/assets/f5754afd-1b03-44e0-b91b-08e497c2c527"" style="width: 20%; max-width: 200px; margin: 5px;" />
 
 </p>
+
