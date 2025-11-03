@@ -1,205 +1,224 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TextInput, 
-  ScrollView, 
-  ActivityIndicator, 
-  TouchableOpacity,
-  Keyboard,
-  Modal,
-  FlatList
+  StyleSheet, 
+  View, 
+  Text, 
+  TextInput, 
+  ScrollView, 
+  ActivityIndicator, 
+  TouchableOpacity,
+  Keyboard,
+  Modal,
+  FlatList,
+  Linking, 
+  Alert 
 } from 'react-native';
 import { Image } from 'expo-image';
-import { ExpoRouter } from 'expo-router';
+// Only need useFocusEffect if using React Navigation/Expo Router
+import { useFocusEffect } from 'expo-router'; 
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { useWatchlist } from '../context/WatchlistContext';
 import { useFavorites } from '../context/FavoritesContext';
-import { Linking, Alert } from 'react-native';
-import { SettingsProvider } from '../context/SettingsContext';
 import { useSettings } from '../context/SettingsContext';
 import * as Font from 'expo-font';
 import { 
-  Roboto_400Regular, // already imported
-  Roboto_700Bold 
+  Roboto_400Regular, 
+  Roboto_700Bold 
 } from '@expo-google-fonts/roboto';
 import { Montserrat_400Regular } from '@expo-google-fonts/montserrat';
 import { Lobster_400Regular } from '@expo-google-fonts/lobster';
 import { OpenSans_400Regular } from '@expo-google-fonts/open-sans';
 
-
-
-
-
+const COMPLETED_SHOWS_KEY = 'completedShows'; 
 
 
 export default function HomeScreen() {
-  const { addToWatchlist, isInWatchlist } = useWatchlist();
-const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-const { watchlist, removeFromWatchlist } = useWatchlist();
+  const { addToWatchlist, isInWatchlist } = useWatchlist();
+  const { watchlist } = useWatchlist();
+  const { addToFavorites, isFavorite } = useFavorites();
+  const { theme, currentFont } = useSettings();
 
-const { theme, currentFont } = useSettings();
+  const [query, setQuery] = useState('');
+  const [shows, setShows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [topRated, setTopRated] = useState([]);
+  const [trending, setTrending] = useState([]);
+  const [DetailsScreen,SetDetailsScreen]= useState(false);
+  const [selectedShow, setSelectedShow] = useState(null);
+  const [cast, setCast] = useState([]);
+  // ✅ Single source for completed IDs
+  const [completedShowsIds, setCompletedShowsIds] = useState([]); 
 
-  const [query, setQuery] = useState('');
-  const [shows, setShows] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [topRated, setTopRated] = useState([]);
-  const [trending, setTrending] = useState([]);
-  //details modal screen
-  const [DetailsScreen,SetDetailsScreen]= useState(false);
-  const [selectedShow, setSelectedShow] = useState(null);
-  const [cast, setCast] = useState([]);
+// --- Focus Effect for Automatic Refresh ---
+// This hook reloads the completed shows every time the screen becomes visible.
+useFocusEffect(
+  React.useCallback(() => {
+    const loadCompleted = async () => {
+      try {
+        const storedCompleted = await AsyncStorage.getItem(COMPLETED_SHOWS_KEY);
+        if (storedCompleted) {
+          setCompletedShowsIds(JSON.parse(storedCompleted)); 
+        } else {
+          setCompletedShowsIds([]);
+        }
+      } catch (e) {
+        console.error('Failed to load completed shows for HomeScreen', e);
+      }
+    };
+    loadCompleted();
+    return () => {}; 
+  }, [])
+);
+// --- End Focus Effect ---
 
-
-  const handleSurpriseMe = async () => {
-  try {
-    const randomPage = Math.floor(Math.random() * 100); // TVMaze has ~100 pages
-    const res = await fetch(`https://api.tvmaze.com/shows?page=${randomPage}`);
-    const data = await res.json();
-
-    if (data.length === 0) return;
-
-    const randomIndex = Math.floor(Math.random() * data.length);
-    const randomShow = data[randomIndex];
-
-    setSelectedShow(randomShow); // open details modal
-    SetDetailsScreen(true);
-  } catch (error) {
-    console.error("Error fetching surprise show:", error);
-  }
+  const handleSurpriseMe = async () => {
+  try {
+    const randomPage = Math.floor(Math.random() * 100);
+    const res = await fetch(`https://api.tvmaze.com/shows?page=${randomPage}`);
+    const data = await res.json();
+    if (data.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * data.length);
+    const randomShow = data[randomIndex];
+    setSelectedShow(randomShow); 
+    SetDetailsScreen(true);
+  } catch (error) {
+    console.error("Error fetching surprise show:", error);
+  }
 };
 
 
-  useEffect(() => {
-  if (selectedShow) fetchCast(selectedShow.id);
+  useEffect(() => {
+  if (selectedShow) fetchCast(selectedShow.id);
 }, [selectedShow]);
 
 const fetchCast = async (id) => {
-  try {
-    const res = await fetch(`https://api.tvmaze.com/shows/${id}/cast`);
-    const data = await res.json();
-    setCast(data); // store full cast array
-  } catch (error) {
-    console.error(error);
-    setCast([]);
-  }
+  try {
+    const res = await fetch(`https://api.tvmaze.com/shows/${id}/cast`);
+    const data = await res.json();
+    setCast(data); 
+  } catch (error) {
+    console.error(error);
+    setCast([]);
+  }
 };
 
-  const BASE_URL = "https://api.tvmaze.com";
+  const BASE_URL = "https://api.tvmaze.com";
 
-  // Fetch Top Rated Shows
-  const fetchTopRatedShows = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/shows?page=1`);
-      const data = await res.json();
-      return data
-        .filter(show => show.rating.average) // only rated
-        .sort((a, b) => b.rating.average - a.rating.average)
-        .slice(0, 20);
-    } catch (error) {
-      console.error("Error fetching top rated:", error);
-      return [];
-    }
-  };
+  // Fetch Top Rated Shows
+  const fetchTopRatedShows = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/shows?page=1`);
+      const data = await res.json();
+      return data
+        .filter(show => show.rating.average) 
+        .sort((a, b) => b.rating.average - a.rating.average)
+        .slice(0, 20);
+    } catch (error) {
+      console.error("Error fetching top rated:", error);
+      return [];
+    }
+  };
 
-  // Fetch Trending Shows
-  const fetchTrendingShows = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/shows?page=1`);
-      const data = await res.json();
-      return data
-        .sort((a, b) => (b.weight || 0) - (a.weight || 0))
-        .slice(0, 20);
-    } catch (error) {
-      console.error("Error fetching trending shows:", error);
-      return [];
-    }
-  };
+  // Fetch Trending Shows
+  const fetchTrendingShows = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/shows?page=1`);
+      const data = await res.json();
+      return data
+        .sort((a, b) => (b.weight || 0) - (a.weight || 0))
+        .slice(0, 20);
+    } catch (error) {
+      console.error("Error fetching trending shows:", error);
+      return [];
+    }
+  };
 
-  useEffect(() => {
-    loadSections();
-  }, []);
+  useEffect(() => {
+    loadSections();
+  }, []);
 
-  const loadSections = async () => {
-    const rated = await fetchTopRatedShows();
-    const trend = await fetchTrendingShows();
-    setTopRated(rated);
-    setTrending(trend);
-  };
+  const loadSections = async () => {
+    const rated = await fetchTopRatedShows();
+    const trend = await fetchTrendingShows();
+    setTopRated(rated);
+    setTrending(trend);
+  };
 
-  const searchShows = async () => {
-    if (!query.trim()) return;
-    Keyboard.dismiss();
-    setLoading(true);
-    setShows([]);
-    try {
-      const response = await fetch(`https://api.tvmaze.com/search/shows?q=${query}`);
-      const data = await response.json();
-      setShows(data);
-    } catch (error) {
-      console.error("Error fetching shows:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const searchShows = async () => {
+    if (!query.trim()) return;
+    Keyboard.dismiss();
+    setLoading(true);
+    setShows([]);
+    try {
+      const response = await fetch(`https://api.tvmaze.com/search/shows?q=${query}`);
+      const data = await response.json();
+      setShows(data);
+    } catch (error) {
+      console.error("Error fetching shows:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const clearResults = () => {
-    setQuery('');
-    setShows([]);
-  };
+  const clearResults = () => {
+    setQuery('');
+    setShows([]);
+  };
 
 // Helper function to render a show card with image + name
 const renderShowCard = (show, onPress) => (
-  <TouchableOpacity
-    key={show.id}
-    style={{ marginHorizontal: 10 }}
-    onPress={() => onPress(show)}
-  >
-    <Image
-      source={{ uri: show.image?.medium || "https://via.placeholder.com/150x200?text=No+Image" }}
-      style={{ width: 120, height: 120, borderRadius: 10 }}
-    />
-    <Text
-      style={{
-        color: "white",
-        fontSize: 14,
-        fontWeight: "600",
-        marginTop: 5,
-        textAlign: "center",
-        width: 120,
-      }}
-      numberOfLines={1}
-    >
-      {show.name}
-    </Text>
-  </TouchableOpacity>
+  <TouchableOpacity
+    key={show.id}
+    style={{ marginHorizontal: 10 }}
+    onPress={() => onPress(show)}
+  >
+    <Image
+      source={{ uri: show.image?.medium || "https://via.placeholder.com/150x200?text=No+Image" }}
+      style={{ width: 120, height: 120, borderRadius: 10 }}
+    />
+    <Text
+      style={{
+        color: "white",
+        fontSize: 14,
+        fontWeight: "600",
+        marginTop: 5,
+        textAlign: "center",
+        width: 120,
+      }}
+      numberOfLines={1}
+    >
+      {show.name}
+    </Text>
+  </TouchableOpacity>
 );
 
 
 const onTopRatedPress = (show) => {
-  setSelectedShow(show); // store the clicked show
-  SetDetailsScreen(true); // open modal
+  setSelectedShow(show); 
+  SetDetailsScreen(true);
 };
 
 const onTrendingPress = (show) => {
-setSelectedShow(show); // store the clicked show
-  SetDetailsScreen(true); // open modal
+setSelectedShow(show); 
+  SetDetailsScreen(true);
 };
 
 
 const openYouTubeTrailer = (query) => {
-  // Construct a YouTube search URL
-  const youtubeAppUrl = `youtube://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-  const youtubeWebUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  const youtubeAppUrl = `youtube://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  const youtubeWebUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 
-  Linking.canOpenURL(youtubeAppUrl).then((supported) => {
-    if (supported) {
-      Linking.openURL(youtubeAppUrl);
-    } else {
-      Linking.openURL(youtubeWebUrl); // fallback to web
-    }
-  }).catch(err => Alert.alert('Error', 'Cannot open YouTube'));
+  Linking.canOpenURL(youtubeAppUrl).then((supported) => {
+    if (supported) {
+      Linking.openURL(youtubeAppUrl);
+    } else {
+      Linking.openURL(youtubeWebUrl); 
+    }
+  }).catch(err => Alert.alert('Error', 'Cannot open YouTube'));
 };
+
+// ✅ The core logic: filters out shows whose IDs are in the completedShowsIds array
+const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(show.id));
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -323,41 +342,41 @@ style={{width:25,height:25}}/>
 </TouchableOpacity>
 </View>
     
-    <View style={{ marginTop: 10, marginBottom: 10 }}>
-      <Text style={[styles.currentlywatching, { color: theme.text }]}>
-        🎬 Currently Watching
-      </Text>
+  <View style={{ marginTop: 10, marginBottom: 10 }}>
+      <Text style={[styles.currentlywatching, { color: theme.text }]}>
+        🎬 Currently Watching
+      </Text>
 
-      {watchlist.length === 0 ? (
-        <Text style={{ color: "gray", fontSize: 16, textAlign: "center", marginTop: 20 }}>
-          No shows added yet.
-        </Text>
-      ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-          {watchlist.map((item) => (
-            <TouchableOpacity key={item.id} style={{ marginHorizontal: 10 }}>
-              <Image
-                source={{ uri: item.image?.medium || "https://via.placeholder.com/150x200?text=No+Image" }}
-                style={{ width: 120, height: 120, borderRadius: 10 }}
-              />
-              <Text
-                style={{
-                  color: "white",
-                  fontSize: 14,
-                  fontWeight: "600",
-                  marginTop: 5,
-                  textAlign: "center",
-                  width: 120,
-                }}
-                numberOfLines={1}
-              >
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-    </View>
+      {currentlyWatching.length === 0 ? (
+        <Text style={{ color: "gray", fontSize: 16, textAlign: "center", marginTop: 20 }}>
+          No shows currently watching.
+        </Text>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+          {currentlyWatching.map((item) => (
+            <TouchableOpacity key={item.id} style={{ marginHorizontal: 10 }}>
+              <Image
+                source={{ uri: item.image?.medium || "https://via.placeholder.com/150x200?text=No+Image" }}
+                style={{ width: 120, height: 120, borderRadius: 10 }}
+              />
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: "600",
+                  marginTop: 5,
+                  textAlign: "center",
+                  width: 120,
+                }}
+                numberOfLines={1}
+              >
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+    </View>
 
     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginLeft: 20 }}>
       <Image
