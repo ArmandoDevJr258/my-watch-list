@@ -11,7 +11,12 @@ import {
   Modal,
   FlatList,
   Linking, 
-  Alert 
+  Alert ,
+ LayoutAnimation,
+  Platform,
+UIManager,
+Share,
+
 } from 'react-native';
 import { Image } from 'expo-image';
 // Only need useFocusEffect if using React Navigation/Expo Router
@@ -30,6 +35,10 @@ import { Lobster_400Regular } from '@expo-google-fonts/lobster';
 import { OpenSans_400Regular } from '@expo-google-fonts/open-sans';
 
 const COMPLETED_SHOWS_KEY = 'completedShows'; 
+if (Platform.OS === 'android') {
+  UIManager.setLayoutAnimationEnabledExperimental &&
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 
 export default function HomeScreen() {
@@ -48,6 +57,7 @@ export default function HomeScreen() {
   const [cast, setCast] = useState([]);
   // ✅ Single source for completed IDs
   const [completedShowsIds, setCompletedShowsIds] = useState([]); 
+const [menu,showmenu]= useState(false);
 
 // --- Focus Effect for Automatic Refresh ---
 // This hook reloads the completed shows every time the screen becomes visible.
@@ -69,7 +79,35 @@ useFocusEffect(
     return () => {}; 
   }, [])
 );
-// --- End Focus Effect ---
+
+  const sendEmail = async () => {
+    const subject = encodeURIComponent('Feedback for Your App');
+    const body = encodeURIComponent(
+      'Hello,\n\nI would like to share my feedback about the app:\n\n'
+    );
+    const email = 'armandodevjr258@gmail.com'; // 👈 your support email
+    const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+
+    const canOpen = await Linking.canOpenURL(mailtoUrl);
+    if (canOpen) {
+      await Linking.openURL(mailtoUrl);
+    } else {
+      console.log('No email app found!');
+    }
+  };
+ const onShare = async () => {
+    try {
+      const result = await Share.share({
+        message:
+          'Check out this amazing app! Download it here: https://mywatchlistdemo.vercel.app/',
+      });
+      if (result.action === Share.sharedAction) {
+        console.log('App shared successfully');
+      }
+    } catch (error) {
+      console.log('Error sharing app:', error);
+    }
+  };
 
   const handleSurpriseMe = async () => {
   try {
@@ -223,8 +261,52 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}> 
-        <Text  style={[styles.title, { fontFamily: currentFont, color: theme.text }]}>My Watch List</Text>
+        <View style={{
+          display:'flex',
+          width:'100%',
+          flexDirection:'row',
+          justifyContent:'space-between'
+        }}> <Text  style={[styles.title, { fontFamily: currentFont, color: theme.text }]}>My Watch List</Text>
 
+
+
+   {menu ? (
+        // When menu = true → show CLOSE button
+        <TouchableOpacity onPress={() => {
+          showmenu(false);
+          console.log('Close menu pressed');
+          // add your close action here
+        }}>
+          <Image
+            source={require('../../assets/images/down.png')}
+           style={{
+              width: 25,
+              height: 25,
+              marginRight: 40,
+              marginTop: 10,
+              tintColor: theme.text,
+            }}
+          />
+        </TouchableOpacity>
+      ) : (
+        // When menu = false → show OPEN button
+        <TouchableOpacity onPress={() => {
+          showmenu(true);
+          console.log('Open menu pressed');
+          // add your open action here
+        }}>
+          <Image
+            source={require('../../assets/images/previous.png')}
+            style={{
+              width: 25,
+              height: 25,
+              marginRight: 40,
+              marginTop: 10,
+              tintColor: theme.text,
+            }}
+          />
+        </TouchableOpacity>
+      )}</View>
        <View style={[styles.searchBox, { borderColor: theme.text }]}>
           <TextInput
             style={styles.searchinput}
@@ -244,7 +326,7 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
 
       {loading && <ActivityIndicator color="white" size="large" style={{ marginTop: 20 }} />}
 
-      {/* Search Results */}
+     
 {/* Search Results */}
 {!loading && shows.length > 0 && (
   <>
@@ -531,6 +613,63 @@ style={{width:25,height:25}}/>
         </TouchableOpacity>
       </View>
     </View>
+  </Modal>
+)}
+
+{menu && (
+  <Modal transparent animationType="fade"
+  onRequestClose={()=>showmenu(false)}>
+    <TouchableOpacity
+      style={{
+        flex: 1,
+        // dim background
+      }}
+      activeOpacity={1}
+      onPress={() => showmenu(false)} // tap outside to close
+    >
+      <View
+        style={{
+          width: 160,
+          height: 100,
+          flexDirection: 'column',
+          position: 'absolute',
+          right:17,
+          top: 0, // give some space from top
+          backgroundColor: 'white',
+          borderRadius: 20,
+          padding: 10,
+        }}
+      >
+        <TouchableOpacity style={{
+          flexDirection:'row',
+       
+        }}   onPress={() => {
+                  showmenu(false);
+                  onShare(); // 👈 Trigger share when pressed
+                }}>
+          <Text style={{ fontSize: 15, color:theme.text, fontWeight: 'bold' }}>
+            Share app
+          </Text>
+          <Image
+          source={require('../../assets/images/share.png')}
+          style={{width:20,height:20,marginLeft:40}}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={{
+          flexDirection:'row',
+            marginTop:20
+        }} onPress={sendEmail}>
+          <Text style={{ fontSize: 15, color:theme.text, fontWeight: 'bold' }}>
+            Send feedback
+          </Text>
+           <Image
+          source={require('../../assets/images/mail.png')}
+          style={{width:20,height:20,marginLeft:10}}
+          />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   </Modal>
 )}
 
