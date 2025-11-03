@@ -99,7 +99,7 @@ const toggleExpand4 = () => {
         <TouchableOpacity style={{ marginRight: 40, marginTop: 10 }} onPress={sendEmail}>
           <Image
             source={require('../../assets/images/mail.png')}
-            style={{ width: 30, height: 30 }}
+            style={{ width: 30, height: 30 ,tintColor:theme.text}}
           />
         </TouchableOpacity>
       </View>
@@ -276,7 +276,7 @@ const toggleExpand4 = () => {
           }}>
             <Text style={{
               marginTop:10,fontSize:20,marginLeft:80,fontWeight:'bold'
-            }}>Sound Efects</Text>
+            }}>Dark Mode</Text>
             <Switch
           value={darkMode}
           onValueChange={(val) => setDarkMode(val)}

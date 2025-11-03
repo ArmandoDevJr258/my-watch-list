@@ -70,21 +70,20 @@ const [completedShows, setCompletedShows] = useState([]);
   
   // --- Async Storage Handlers ---
 
-  // Load watched episodes and total map from AsyncStorage
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const savedWatched = await AsyncStorage.getItem(WATCHED_EPISODES_KEY);
-        if (savedWatched) setWatchedEpisodes(JSON.parse(savedWatched));
+useEffect(() => {
+  const loadCompleted = async () => {
+    try {
+      const storedCompleted = await AsyncStorage.getItem('completedShows');
+      if (storedCompleted) {
+        setCompletedShows(JSON.parse(storedCompleted));
+      }
+    } catch (e) {
+      console.error('Failed to load completed shows', e);
+    }
+  };
+  loadCompleted();
+}, []);
 
-        const savedTotal = await AsyncStorage.getItem(TOTAL_EPISODES_KEY);
-        if (savedTotal) setTotalEpisodesMap(JSON.parse(savedTotal));
-      } catch (error) {
-        console.error("Failed to load data:", error);
-      }
-    };
-    loadData();
-  }, []);
 
 
   useEffect(() => {
@@ -113,43 +112,42 @@ const [completedShows, setCompletedShows] = useState([]);
   };
 
   // --- Mark episode watched/unwatched (FIXED & SAVING) ---
-const markEpisodeAsWatched = async (showId, episodeId) => {
-  setWatchedEpisodes(prev => {
-    const showWatched = prev[showId] || [];
-    const isWatched = showWatched.includes(episodeId);
-    const updated = isWatched
-      ? showWatched.filter(id => id !== episodeId)
-      : [...showWatched, episodeId];
+ const markEpisodeAsWatched = async (showId, episodeId) => {
+    setWatchedEpisodes((prev) => {
+      const showWatched = prev[showId] || [];
+      const isWatched = showWatched.includes(episodeId);
 
-    const newWatched = { ...prev, [showId]: updated };
-    AsyncStorage.setItem(WATCHED_EPISODES_KEY, JSON.stringify(newWatched)).catch(console.error);
+      const updatedWatched = isWatched
+        ? showWatched.filter((id) => id !== episodeId)
+        : [...showWatched, episodeId];
 
-    // 🔥 Check completion progress
-    const total = totalEpisodesMap[showId] || 0;
-    const watchedCount = updated.length;
+      const newWatched = { ...prev, [showId]: updatedWatched };
+      AsyncStorage.setItem(WATCHED_EPISODES_KEY, JSON.stringify(newWatched)).catch(console.error);
 
-    if (total > 0 && watchedCount === total) {
-      // Mark as completed if 100%
-      setCompletedShows(prevCompleted => {
-        if (!prevCompleted.includes(showId)) {
-          const updatedCompleted = [...prevCompleted, showId];
-          AsyncStorage.setItem('completedShows', JSON.stringify(updatedCompleted));
+      const total = totalEpisodesMap[showId] || 0;
+      const watchedCount = updatedWatched.length;
+
+      if (total > 0 && watchedCount === total) {
+        setCompletedShows((prevCompleted) => {
+          if (!prevCompleted.includes(showId)) {
+            const updatedCompleted = [...prevCompleted, showId];
+            AsyncStorage.setItem('completedShows', JSON.stringify(updatedCompleted)).catch(console.error);
+            return updatedCompleted;
+          }
+          return prevCompleted;
+        });
+      } else {
+        setCompletedShows((prevCompleted) => {
+          const updatedCompleted = prevCompleted.filter((id) => id !== showId);
+          AsyncStorage.setItem('completedShows', JSON.stringify(updatedCompleted)).catch(console.error);
           return updatedCompleted;
-        }
-        return prevCompleted;
-      });
-    } else {
-      // Remove from completed if progress drops
-      setCompletedShows(prevCompleted => {
-        const updatedCompleted = prevCompleted.filter(id => id !== showId);
-        AsyncStorage.setItem('completedShows', JSON.stringify(updatedCompleted));
-        return updatedCompleted;
-      });
-    }
+        });
+      }
 
-    return newWatched;
-  });
-};
+      return newWatched;
+    });
+  };
+
 
 
 
@@ -180,59 +178,57 @@ const markEpisodeAsWatched = async (showId, episodeId) => {
       </View>
 
       {/* Watchlist */}
-      {activeFilter === "watching" && (
-        <View style={{ marginTop: 10, height: 600 }}>
-          {watchlist.length === 0 ? (
-            <Text style={{ color: "gray", fontSize: 16, textAlign: "center", marginTop: 40 }}>
-              No shows added yet.
-            </Text>
-          ) : (
-            <FlatList
-              data={watchlist}
-              keyExtractor={item => item.id.toString()}
-              extraData={watchedEpisodes}
-              contentContainerStyle={{ padding: 15 }}
-              renderItem={({ item }) => {
-                const totalEpisodes = totalEpisodesMap[item.id] || 0;
-                const watchedCount = watchedEpisodes[item.id]?.length || 0;
-                const progressPercent = totalEpisodes ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
+   // Watching List
+{activeFilter === "watching" && (
+  <View style={{ marginTop: 10, height: 600 }}>
+    {watchlist.filter(show => !completedShows.includes(show.id)).length === 0 ? (
+      <Text style={{ color: "gray", fontSize: 16, textAlign: "center", marginTop: 40 }}>
+        No shows currently watching.
+      </Text>
+    ) : (
+      <FlatList
+        data={watchlist.filter(show => !completedShows.includes(show.id))} // ✅ exclude completed
+        keyExtractor={item => item.id.toString()}
+        extraData={watchedEpisodes}
+        contentContainerStyle={{ padding: 15 }}
+        renderItem={({ item }) => {
+          const totalEpisodes = totalEpisodesMap[item.id] || 0;
+          const watchedCount = watchedEpisodes[item.id]?.length || 0;
+          const progressPercent = totalEpisodes ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
 
-                return (
-                  <View style={styles.card}>
-                    <Image
-                      source={{ uri: item.image?.medium || "https://via.placeholder.com/100x150?text=No+Image" }}
-                      style={styles.showImage}
-                    />
-                    <View style={styles.infoContainer}>
-                      <Text style={styles.showTitle}>{item.name}</Text>
-                      <Text style={styles.showGenre}>{item.genres?.join(", ") || "No genre"}</Text>
-                      <Text style={styles.showRating}>⭐ {item.rating?.average || "N/A"}</Text>
-                    </View>
+          return (
+            <View style={styles.card}>
+              <Image
+                source={{ uri: item.image?.medium || "https://via.placeholder.com/100x150?text=No+Image" }}
+                style={styles.showImage}
+              />
+              <View style={styles.infoContainer}>
+                <Text style={styles.showTitle}>{item.name}</Text>
+                <Text style={styles.showGenre}>{item.genres?.join(", ") || "No genre"}</Text>
+                <Text style={styles.showRating}>⭐ {item.rating?.average || "N/A"}</Text>
+              </View>
+              <View style={styles.progressContainer}>
+                <Text style={styles.progressText}>{progressPercent}%</Text>
+              </View>
+              <View style={styles.actionsContainer}>
+                <TouchableOpacity onPress={() => setSelectedShow(item) || setShowDetails(true)}>
+                  <Image
+                    source={require("../../assets/images/play-button.png")}
+                    style={styles.playIcon}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => removeFromWatchlist(item.id)}>
+                  <Text style={styles.removeText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        }}
+      />
+    )}
+  </View>
+)}
 
-                    <View style={styles.progressContainer}>
-                      <Text style={styles.progressText}>
-                        {progressPercent}%
-                      </Text>
-                    </View>
-
-                    <View style={styles.actionsContainer}>
-                      <TouchableOpacity onPress={() => setSelectedShow(item) || setShowDetails(true)}>
-                        <Image
-                          source={require("../../assets/images/play-button.png")}
-                          style={styles.playIcon}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => removeFromWatchlist(item.id)}>
-                        <Text style={styles.removeText}>Remove</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              }}
-            />
-          )}
-        </View>
-      )}
       {activeFilter === "favorites" && (
   <View style={{ marginTop: 10, height: 600 }}>
     {favorites.length === 0 ? (   // ✅ changed from watchlist to favorites
@@ -272,6 +268,30 @@ const markEpisodeAsWatched = async (showId, episodeId) => {
     )}
   </View>
 )}
+ {activeFilter === 'completed' && (
+        <FlatList
+          data={watchlist.filter((show) => completedShows.includes(show.id))}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{ padding: 15 }}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Image
+                source={{
+                  uri:
+                    item.image?.medium ||
+                    'https://via.placeholder.com/100x150?text=No+Image',
+                }}
+                style={styles.showImage}
+              />
+              <View style={styles.infoContainer}>
+                <Text style={styles.showTitle}>{item.name}</Text>
+                <Text style={{ color: 'green', fontWeight: 'bold' }}>Completed</Text>
+              </View>
+            </View>
+          )}
+        />
+      )}
+
 
       {/* Show Details Modal */}
       {showDetails && selectedShow && (

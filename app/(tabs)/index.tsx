@@ -206,7 +206,7 @@ const openYouTubeTrailer = (query) => {
       <View style={styles.header}> 
         <Text  style={[styles.title, { fontFamily: currentFont, color: theme.text }]}>My Watch List</Text>
 
-        <View style={styles.searchBox}>
+       <View style={[styles.searchBox, { borderColor: theme.text }]}>
           <TextInput
             style={styles.searchinput}
             placeholder='Search TV Shows...'
@@ -218,7 +218,7 @@ const openYouTubeTrailer = (query) => {
           <TouchableOpacity style={styles.searchButton} onPress={searchShows}>
             <Image
             source={require('../../assets/images/search.png')}
-            style={{width:30,height:30,tintColor:'black'}}/>
+            style={{width:30,height:30,tintColor:theme.text}}/>
           </TouchableOpacity>
         </View>
       </View>
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
   container:{ flex:1, backgroundColor:'gray', },
   header:{ width:'100%', marginTop:20 },
   title:{ fontSize:25, color:'white', marginLeft:20, fontWeight:'bold' },
-  searchBox:{ flexDirection:'row', alignItems:'center', backgroundColor:'white', borderRadius:10, width:'85%', height:50, marginTop:20, marginLeft:20, paddingHorizontal:10 },
+  searchBox:{ flexDirection:'row', alignItems:'center', backgroundColor:'white', borderRadius:10, width:'90%', height:50, marginTop:20, marginLeft:20, paddingHorizontal:10 ,borderWidth:2},
   searchinput:{ flex:1, height:'100%', fontSize:18, color:'black' },
   searchButton:{  paddingVertical:8, paddingHorizontal:10, borderRadius:8 },
   searchButtonText:{ color:'white', fontSize:18 },

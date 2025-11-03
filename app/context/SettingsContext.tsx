@@ -23,7 +23,7 @@ const themes = {
   },
   neon: {
     light: { background: '#eaffea', text: '#00cc44', accent: '#ff00cc' },
-    dark: { background: '#9da89dff', text: '#39ff14', accent: '#ff0099' },
+    dark: { background: '#0f0f0f', text: '#39ff14', accent: '#ff0099' },
   },
   halloween: {
     background: '#000000',
@@ -35,9 +35,8 @@ const themes = {
   },
 };
 
-// Add font options
 const fonts = [
-  'System', // default
+  'System',
   'Roboto',
   'Montserrat',
   'Lobster',
@@ -55,16 +54,17 @@ export const SettingsProvider = ({ children }) => {
   const [currentFont, setCurrentFont] = useState('System');
   const [appearance, setAppearance] = useState('System');
   const [dataSaver, setDataSaver] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false); // ✅ Avoid premature save overwriting load
 
   const getTheme = () => {
-    const t = themes[currentTheme];
+    const t = themes[currentTheme] || themes.default;
     if (currentTheme === 'halloween' || currentTheme === 'christmas') return t;
     return darkMode ? t.dark : t.light;
   };
 
   const theme = getTheme();
 
-  // Load settings
+  // ✅ Load settings from AsyncStorage
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -80,28 +80,51 @@ export const SettingsProvider = ({ children }) => {
         if (storedAppearance !== null) setAppearance(storedAppearance);
         if (storedDataSaver !== null) setDataSaver(JSON.parse(storedDataSaver));
       } catch (e) {
-        console.log('Failed to load settings', e);
+        console.log('⚠️ Failed to load settings:', e);
+      } finally {
+        setIsLoaded(true);
       }
     };
     loadSettings();
   }, []);
 
-  // Save settings
+  // ✅ Only save after settings have finished loading
   useEffect(() => {
-    AsyncStorage.setItem('darkMode', JSON.stringify(darkMode));
-    AsyncStorage.setItem('currentTheme', currentTheme);
-    AsyncStorage.setItem('currentFont', currentFont);
-    AsyncStorage.setItem('appearance', appearance);
-    AsyncStorage.setItem('dataSaver', JSON.stringify(dataSaver));
-  }, [darkMode, currentTheme, currentFont, appearance, dataSaver]);
+    if (!isLoaded) return;
+    const saveSettings = async () => {
+      try {
+        await AsyncStorage.multiSet([
+          ['darkMode', JSON.stringify(darkMode)],
+          ['currentTheme', currentTheme],
+          ['currentFont', currentFont],
+          ['appearance', appearance],
+          ['dataSaver', JSON.stringify(dataSaver)],
+        ]);
+      } catch (e) {
+        console.log('⚠️ Failed to save settings:', e);
+      }
+    };
+    saveSettings();
+  }, [darkMode, currentTheme, currentFont, appearance, dataSaver, isLoaded]);
 
+  // ✅ Reset all settings
   const resetSettings = async () => {
-    setDarkMode(false);
-    setCurrentTheme('default');
-    setCurrentFont('System');
-    setAppearance('System');
-    setDataSaver(false);
-    await AsyncStorage.multiRemove(['darkMode', 'currentTheme', 'currentFont', 'appearance', 'dataSaver']);
+    try {
+      await AsyncStorage.multiRemove([
+        'darkMode',
+        'currentTheme',
+        'currentFont',
+        'appearance',
+        'dataSaver',
+      ]);
+      setDarkMode(false);
+      setCurrentTheme('default');
+      setCurrentFont('System');
+      setAppearance('System');
+      setDataSaver(false);
+    } catch (e) {
+      console.log('⚠️ Failed to reset settings:', e);
+    }
   };
 
   return (
@@ -120,6 +143,7 @@ export const SettingsProvider = ({ children }) => {
         setDataSaver,
         resetSettings,
         theme,
+        themes,
       }}
     >
       {children}
