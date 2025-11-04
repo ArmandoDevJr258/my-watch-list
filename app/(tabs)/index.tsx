@@ -58,7 +58,12 @@ export default function HomeScreen() {
   // ✅ Single source for completed IDs
   const [completedShowsIds, setCompletedShowsIds] = useState([]); 
 const [menu,showmenu]= useState(false);
+const [agent,showagent]= useState(false);
 
+
+const askAI=()=>{
+  Alert.alert("feature coming soon..");
+}
 // --- Focus Effect for Automatic Refresh ---
 // This hook reloads the completed shows every time the screen becomes visible.
 useFocusEffect(
@@ -269,6 +274,26 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
         }}> <Text  style={[styles.title, { fontFamily: currentFont, color: theme.text }]}>My Watch List</Text>
 
 
+<TouchableOpacity style={{
+  width:100,
+  height:30,
+  backgroundColor: '#4B7BE5', // nice blue
+  
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+   
+    marginTop:5}} onPress={askAI}>
+  <Text style={{
+   color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  }}>Ask AI</Text>
+</TouchableOpacity>
 
    {menu ? (
         // When menu = true → show CLOSE button
@@ -283,7 +308,7 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
               width: 25,
               height: 25,
               marginRight: 40,
-              marginTop: 10,
+              
               tintColor: theme.text,
             }}
           />
@@ -301,7 +326,7 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
               width: 25,
               height: 25,
               marginRight: 40,
-              marginTop: 10,
+             marginTop:5,
               tintColor: theme.text,
             }}
           />
@@ -574,9 +599,19 @@ style={{width:25,height:25}}/>
               source={{ uri: item.person.image?.medium || 'https://via.placeholder.com/80x100?text=No+Image' }}
               style={{ width: 80, height: 100, borderRadius: 8 }}
             />
-            <Text style={{ fontSize: 12, color: 'white', marginTop: 5, textAlign: 'center' }}>
-              {item.person.name}
-            </Text>
+           <Text style={{
+  fontSize: 13,
+  color: '#333',
+  marginTop: 6,
+  textAlign: 'center',
+  fontWeight: '500',
+}}>
+  {item.person.name}{"\n"}
+  <Text style={{ fontSize: 12, color: 'white' }}>
+    as {item.character?.name || 'Unknown'}
+  </Text>
+</Text>
+
           </View>
         ))}
       </ScrollView>
@@ -634,7 +669,7 @@ style={{width:25,height:25}}/>
           flexDirection: 'column',
           position: 'absolute',
           right:17,
-          top: 0, // give some space from top
+          top: 10, // give some space from top
           backgroundColor: 'white',
           borderRadius: 20,
           padding: 10,
@@ -673,6 +708,13 @@ style={{width:25,height:25}}/>
   </Modal>
 )}
 
+{agent&&(
+  <Modal>
+    <TouchableOpacity>
+      <View></View>
+    </TouchableOpacity>
+  </Modal>
+)}
 
     </View>
   );

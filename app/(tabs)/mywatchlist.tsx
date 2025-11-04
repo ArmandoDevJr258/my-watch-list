@@ -304,6 +304,7 @@ useEffect(() => {
                   style={{ width: '40%', height: 200, borderRadius: 10, marginRight: 15 }}
                 />
                 <View style={{ flex: 1, justifyContent: 'space-between' }}>
+                  <Text style={{color:'black',fontSize:20,fontWeight:'bold'}}>{selectedShow.name}</Text>
                   <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>Progress</Text>
                   <Text style={{ fontSize: 14, color: 'lightgreen', marginBottom: 10 }}>
                     {watchedEpisodes[selectedShow.id]?.length || 0}/{seasons.reduce((sum,s)=>sum+(s.episodeOrder||0),0)} eps watched
@@ -325,8 +326,20 @@ useEffect(() => {
                       source={{ uri: item.person.image?.medium || 'https://via.placeholder.com/80x100?text=No+Image' }}
                       style={{ width: 80, height: 100, borderRadius: 8 }}
                     />
-                    <Text style={{ fontSize: 12, color: '#000', marginTop: 5, textAlign: 'center' }}>
-                      {item.person.name}
+                    
+                         <Text style={{
+  fontSize: 13,
+  color: '#333',
+  marginTop: 6,
+  textAlign: 'center',
+  fontWeight: '500',
+}}>
+  {item.person.name}{"\n"}
+  <Text style={{ fontSize: 12, color: '#777' }}>
+    as {item.character?.name || 'Unknown'}
+  </Text>
+
+
                     </Text>
                   </View>
                 ))}
