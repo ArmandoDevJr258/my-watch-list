@@ -46,6 +46,23 @@ export default function HomeScreen() {
   const { watchlist } = useWatchlist();
   const { addToFavorites, isFavorite } = useFavorites();
   const { theme, currentFont } = useSettings();
+const [autocompleteResults, setAutocompleteResults] = useState([]);
+const searchShowsAutocomplete = async (text) => {
+  setQuery(text);
+  if (text.trim().length < 2) { // small threshold to reduce requests
+    setAutocompleteResults([]);
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(text)}`);
+    const data = await response.json();
+    setAutocompleteResults(data.map(item => item.show)); // extract show objects directly
+  } catch (error) {
+    console.error("Error fetching autocomplete shows:", error);
+    setAutocompleteResults([]);
+  }
+};
 
   const [query, setQuery] = useState('');
   const [shows, setShows] = useState([]);
@@ -339,10 +356,13 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
             style={styles.searchinput}
             placeholder='Search TV Shows...'
             value={query}
-            onChangeText={setQuery}
+            onChangeText={searchShowsAutocomplete}
             placeholderTextColor="#777"
-            onSubmitEditing={searchShows}
+            onSubmitEditing={searchShows} 
           />
+
+
+
           <TouchableOpacity style={styles.searchButton} onPress={searchShows}>
             <Image
             source={require('../../assets/images/search.png')}
@@ -453,7 +473,7 @@ style={{width:25,height:25}}/>
     
   <View style={{ marginTop: 10, marginBottom: 10 }}>
       <Text style={[styles.currentlywatching, { color: theme.text ,fontSize: currentFontSize,}]}>
-        🎬 Currently Watching
+        🎬  Currently Watching
       </Text>
 
       {currentlyWatching.length === 0 ? (
@@ -461,7 +481,7 @@ style={{width:25,height:25}}/>
           No shows currently watching.
         </Text>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: -10 }}>
           {currentlyWatching.map((item) => (
             <TouchableOpacity key={item.id} style={{ marginHorizontal: 10 }}>
               <Image
@@ -801,7 +821,7 @@ addIcon: {
     fontWeight:'bold',
     fontSize:20
   },
-  currentlywatching:{fontSize:25, color:'white', marginLeft:20, fontWeight:'bold'},
+  currentlywatching:{fontSize:25, color:'white', marginLeft:-10, fontWeight:'bold'},
   topratedshows:{fontSize:25, color:'white', fontWeight:'bold'},
   trendingsshows:{fontSize:25, color:'white', fontWeight:'bold'},
 });

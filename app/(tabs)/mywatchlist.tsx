@@ -57,17 +57,19 @@ const [completedShows, setCompletedShows] = useState([]);
     }
   };
 
-  const fetchEpisodes = async (seasonId) => {
-    try {
-      const res = await fetch(`https://api.tvmaze.com/seasons/${seasonId}/episodes`);
-      const data = await res.json();
-      setEpisodes(data);
-    } catch (error) {
-      console.error(error);
-      setEpisodes([]);
-    }
-  };
-  
+const fetchEpisodes = async (seasonId) => {
+  try {
+    const res = await fetch(`https://api.tvmaze.com/seasons/${seasonId}/episodes`);
+    const data = await res.json();
+    // filter only original episodes
+    const originalEpisodes = data.filter(episode => episode.type === 'regular');
+    setEpisodes(originalEpisodes);
+  } catch (error) {
+    console.error(error);
+    setEpisodes([]);
+  }
+};
+
   // --- Async Storage Handlers ---
 
 useEffect(() => {
