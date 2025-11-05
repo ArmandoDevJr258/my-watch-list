@@ -218,6 +218,7 @@ const renderShowCard = (show, onPress) => (
     <Image
       source={{ uri: show.image?.medium || "https://via.placeholder.com/150x200?text=No+Image" }}
       style={{ width: 120, height: 120, borderRadius: 10 }}
+resizeMode='stretch'
     />
     <Text
       style={{
@@ -277,7 +278,8 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
 <TouchableOpacity style={{
   width:100,
   height:30,
-  backgroundColor: '#4B7BE5', // nice blue
+  backgroundColor: '#4B7BE5',
+  
   
     borderRadius: 25,
     alignItems: 'center',
@@ -465,20 +467,21 @@ style={{width:25,height:25}}/>
               <Image
                 source={{ uri: item.image?.medium || "https://via.placeholder.com/150x200?text=No+Image" }}
                 style={{ width: 120, height: 120, borderRadius: 10 }}
+resizeMode='stretch'
               />
-              <Text
-                style={{
-                  color: "white",
-                  fontSize: 14,
-                  fontWeight: "600",
-                  marginTop: 5,
-                  textAlign: "center",
-                  width: 120,
-                }}
-                numberOfLines={1}
-              >
-                {item.name}
-              </Text>
+               <Text
+      style={{
+        color: "white",
+        fontSize: 14,
+        fontWeight: "600",
+        marginTop: 5,
+        textAlign: "center",
+        width: 120,
+      }}
+      numberOfLines={1}
+    >
+      {item.name}
+    </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -531,7 +534,7 @@ style={{width:25,height:25}}/>
     <View style={{ flex: 1, backgroundColor: 'gray', padding: 20 }}>
       
       {/* Top Buttons */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
         <TouchableOpacity
           onPress={() => {
             if (!isFavorite(selectedShow.id)) {
@@ -544,7 +547,7 @@ style={{width:25,height:25}}/>
         >
           <Image
             source={require('../../assets/images/heart.png')}
-            style={{ width: 20, height: 20, tintColor: 'white' }}
+            style={{ width: 20, height: 20, tintColor: 'white',marginTop:10}}
           />
         </TouchableOpacity>
 
@@ -557,7 +560,7 @@ style={{width:25,height:25}}/>
       </View>
 
       {/* Image + Summary Side by Side */}
-      <View style={{ flexDirection: 'row', marginBottom: 15 }}>
+      <View style={{ flexDirection: 'row', marginBottom: 15,marginTop:10 }}>
         {/* Show Image */}
         <Image
           source={{
@@ -664,12 +667,12 @@ style={{width:25,height:25}}/>
     >
       <View
         style={{
-          width: 160,
+          width: 180,
           height: 100,
           flexDirection: 'column',
           position: 'absolute',
           right:17,
-          top: 10, // give some space from top
+          top: 20, 
           backgroundColor: 'white',
           borderRadius: 20,
           padding: 10,
