@@ -12,7 +12,7 @@ const MyWatchlist = () => {
   const { watchlist, removeFromWatchlist } = useWatchlist();
   const { favorites, removeFromFavorites } = useFavorites();
    const { theme } = useSettings();
-
+const { currentFontSize, setCurrentFontSize } = useSettings();
   const [selectedShow, setSelectedShow] = useState(null);
   const [cast, setCast] = useState([]);
   const [seasons, setSeasons] = useState([]);
@@ -155,7 +155,7 @@ useEffect(() => {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title,{ color: theme.text }]}>My Watch List</Text>
+        <Text style={[styles.title,{ color: theme.text,fontSize: currentFontSize, }]}>My Watch List</Text>
         <Image
           source={require('../../assets/images/stats.png')}
           style={{ width: 30, height: 30, tintColor: 'blue' }}

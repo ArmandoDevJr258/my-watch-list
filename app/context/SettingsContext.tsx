@@ -48,13 +48,17 @@ const fonts = [
   'CourierNew',
 ];
 
+// 🆕 Add font size options
+const fontSizes = [12, 14, 16, 18, 20, 22, 24];
+
 export const SettingsProvider = ({ children }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
   const [currentFont, setCurrentFont] = useState('System');
   const [appearance, setAppearance] = useState('System');
   const [dataSaver, setDataSaver] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false); // ✅ Avoid premature save overwriting load
+  const [currentFontSize, setCurrentFontSize] = useState(16); // 🆕 default font size
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const getTheme = () => {
     const t = themes[currentTheme] || themes.default;
@@ -64,19 +68,21 @@ export const SettingsProvider = ({ children }) => {
 
   const theme = getTheme();
 
-  // ✅ Load settings from AsyncStorage
+  // ✅ Load settings
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const storedDarkMode = await AsyncStorage.getItem('darkMode');
         const storedTheme = await AsyncStorage.getItem('currentTheme');
         const storedFont = await AsyncStorage.getItem('currentFont');
+        const storedFontSize = await AsyncStorage.getItem('currentFontSize'); // 🆕
         const storedAppearance = await AsyncStorage.getItem('appearance');
         const storedDataSaver = await AsyncStorage.getItem('dataSaver');
 
         if (storedDarkMode !== null) setDarkMode(JSON.parse(storedDarkMode));
         if (storedTheme !== null) setCurrentTheme(storedTheme);
         if (storedFont !== null) setCurrentFont(storedFont);
+        if (storedFontSize !== null) setCurrentFontSize(Number(storedFontSize)); // 🆕
         if (storedAppearance !== null) setAppearance(storedAppearance);
         if (storedDataSaver !== null) setDataSaver(JSON.parse(storedDataSaver));
       } catch (e) {
@@ -88,7 +94,7 @@ export const SettingsProvider = ({ children }) => {
     loadSettings();
   }, []);
 
-  // ✅ Only save after settings have finished loading
+  // ✅ Save settings
   useEffect(() => {
     if (!isLoaded) return;
     const saveSettings = async () => {
@@ -97,6 +103,7 @@ export const SettingsProvider = ({ children }) => {
           ['darkMode', JSON.stringify(darkMode)],
           ['currentTheme', currentTheme],
           ['currentFont', currentFont],
+          ['currentFontSize', currentFontSize.toString()], // 🆕
           ['appearance', appearance],
           ['dataSaver', JSON.stringify(dataSaver)],
         ]);
@@ -105,7 +112,7 @@ export const SettingsProvider = ({ children }) => {
       }
     };
     saveSettings();
-  }, [darkMode, currentTheme, currentFont, appearance, dataSaver, isLoaded]);
+  }, [darkMode, currentTheme, currentFont, currentFontSize, appearance, dataSaver, isLoaded]);
 
   // ✅ Reset all settings
   const resetSettings = async () => {
@@ -114,12 +121,14 @@ export const SettingsProvider = ({ children }) => {
         'darkMode',
         'currentTheme',
         'currentFont',
+        'currentFontSize', // 🆕
         'appearance',
         'dataSaver',
       ]);
       setDarkMode(false);
       setCurrentTheme('default');
       setCurrentFont('System');
+      setCurrentFontSize(16); // 🆕 reset default
       setAppearance('System');
       setDataSaver(false);
     } catch (e) {
@@ -137,6 +146,9 @@ export const SettingsProvider = ({ children }) => {
         currentFont,
         setCurrentFont,
         fonts,
+        currentFontSize,          // 🆕 expose font size
+        setCurrentFontSize,       // 🆕
+        fontSizes,                // 🆕
         appearance,
         setAppearance,
         dataSaver,

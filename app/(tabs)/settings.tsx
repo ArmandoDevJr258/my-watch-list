@@ -10,7 +10,9 @@ import {
   UIManager,
   Alert,
   ScrollView,
-  Switch
+  Switch,
+  FlatList,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as MailComposer from 'expo-mail-composer';
@@ -18,12 +20,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SettingsProvider } from '../context/SettingsContext';
 import { useSettings } from '../context/SettingsContext';
 
+
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental &&
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 const Settings = () => {
+const { currentFontSize, setCurrentFontSize } = useSettings();
+
   const [help, setHelp] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [expanded2, setExpanded2] = useState(false);
@@ -32,10 +37,17 @@ const Settings = () => {
   const [apearence,setapearence]= useState(false);
   const [themes,setthemes]= useState(false)
   const [font,setfont]= useState(false);
+  const [fontsize,setfontsize]= useState(false);
 
   const { currentTheme, setCurrentTheme ,currentFont,setCurrentFont } = useSettings();
   
 
+
+  const Fontsize = [
+    { id: 0, name: 'Small', size: 18 },
+    { id: 1, name: 'Normal', size: 25 },
+    { id: 2, name: 'Large', size: 30 },
+  ];
 const toggleExpand = () => {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   setExpanded(!expanded);
@@ -95,7 +107,7 @@ const toggleExpand4 = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Settings</Text>
+        <Text style={[styles.title, { color: theme.text,fontSize: currentFontSize, }]}>Settings</Text>
         <TouchableOpacity style={{ marginRight: 40, marginTop: 10 }} onPress={sendEmail}>
           <Image
             source={require('../../assets/images/mail.png')}
@@ -148,6 +160,7 @@ const toggleExpand4 = () => {
             <Text style={styles.setterText}>Help & Support</Text>
           </View>
         </TouchableOpacity>
+        
 
         <Text style={{ textAlign: 'center', marginTop: 100 }}>Version 1.0</Text>
       </View>
@@ -291,6 +304,12 @@ const toggleExpand4 = () => {
          <TouchableOpacity onPress={()=>setfont(false)}>
           <View style={styles.setter}>
             <Text style={styles.setterText}>Font Family</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={()=>setfontsize(true)}>
+          <View style={styles.setter}>
+            <Text style={styles.setterText}>Font Size</Text>
           </View>
         </TouchableOpacity>
 
@@ -529,6 +548,66 @@ const toggleExpand4 = () => {
     </View>
   </Modal>
 )}
+{fontsize && (
+  <Modal transparent animationType="fade"
+  onRequestClose={()=>setfontsize(false)}>
+    <TouchableWithoutFeedback onPress={() => setfontsize(false)}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.3)', // optional dim background
+          justifyContent: 'center',
+          alignItems: 'center',
+          
+        }}
+      >
+        {/* This inner block stops touches from closing the modal */}
+        <TouchableWithoutFeedback>
+          <View
+            style={{
+              backgroundColor: 'gray',
+              
+              borderRadius: 20,
+              flexDirection: 'row',
+              marginTop:-100
+            }}
+          >
+           <FlatList
+  horizontal
+  data={Fontsize}
+  keyExtractor={(item, index) => index.toString()}
+  renderItem={({ item }) => {
+    const isSelected = currentFontSize === item.size; // check if this size is selected
+    return (
+      <TouchableOpacity 
+        style={[
+          styles.btnsize, 
+          { 
+            backgroundColor: isSelected ? 'green' : 'blue' // highlight selected
+          }
+        ]}
+        onPress={() => setCurrentFontSize(item.size)}
+      >
+        <Text style={{
+          fontSize: 20,
+          fontWeight: 'bold',
+          marginTop: 5,
+          textAlign: 'center',
+          color: isSelected ? 'white' : 'black' // optional: contrast text color
+        }}>
+          {item.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  }}
+/>
+
+          </View>
+        </TouchableWithoutFeedback>
+      </View>
+    </TouchableWithoutFeedback>
+  </Modal>
+)}
 
 
     </View>
@@ -540,7 +619,7 @@ export default Settings;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'gray' },
   header: { width: '100%', marginTop: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 25, fontWeight: 'bold', marginLeft: 20 },
+  title: {   fontWeight: 'bold', marginLeft: 20 },
   settingView: { width: '100%', marginTop: 20 },
   setter: { width: '80%', backgroundColor: 'white', height: 50, alignSelf: 'center', borderRadius: 10, marginTop: 20, justifyContent: 'center' },
   setterText: { fontSize: 20, fontWeight: 'bold', marginLeft:80, },
@@ -552,4 +631,13 @@ const styles = StyleSheet.create({
   themetext:{fontSize:20,marginTop:5,marginLeft:20},
   apearence:{fontSize:20,fontWeight:'bold'},
   themes:{fontSize:20,fontWeight:'bold'},
+btnsize: {
+  width: 100,
+  height: 40,
+  borderRadius: 10,
+  margin: 10,
+  justifyContent: 'center', // vertically center the text
+  alignItems: 'center', // horizontally center
+},
+
 });

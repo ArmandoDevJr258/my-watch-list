@@ -59,7 +59,7 @@ export default function HomeScreen() {
   const [completedShowsIds, setCompletedShowsIds] = useState([]); 
 const [menu,showmenu]= useState(false);
 const [agent,showagent]= useState(false);
-
+const { currentFontSize, setCurrentFontSize } = useSettings();
 
 const askAI=()=>{
   Alert.alert("feature coming soon..");
@@ -272,7 +272,7 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
           width:'100%',
           flexDirection:'row',
           justifyContent:'space-between'
-        }}> <Text  style={[styles.title, { fontFamily: currentFont, color: theme.text }]}>My Watch List</Text>
+        }}> <Text  style={[styles.title, { fontFamily: currentFont, color: theme.text ,fontSize: currentFontSize,}]}>My Watch List</Text>
 
 
 <TouchableOpacity style={{
@@ -452,7 +452,7 @@ style={{width:25,height:25}}/>
 </View>
     
   <View style={{ marginTop: 10, marginBottom: 10 }}>
-      <Text style={[styles.currentlywatching, { color: theme.text }]}>
+      <Text style={[styles.currentlywatching, { color: theme.text ,fontSize: currentFontSize,}]}>
         🎬 Currently Watching
       </Text>
 
@@ -495,7 +495,7 @@ resizeMode='stretch'
       />
       
       
-      <Text style={[styles.topratedshows, { color: theme.text }]}>
+      <Text style={[styles.topratedshows, { color: theme.text,fontSize: currentFontSize, }]}>
         Top Rated Shows
       </Text>
     </View>
@@ -511,7 +511,7 @@ resizeMode='stretch'
         source={require("../../assets/images/trend.png")}
         style={{ width: 30, height: 30, marginRight: 10 }}
       />
-      <Text style={[styles.trendingsshows, { color: theme.text }]}>
+      <Text style={[styles.trendingsshows, { color: theme.text,fontSize: currentFontSize, }]}>
         Trending Shows
       </Text>
     </View>
