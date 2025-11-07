@@ -42,6 +42,7 @@ if (Platform.OS === 'android') {
 
 
 export default function HomeScreen() {
+  
   const { addToWatchlist, isInWatchlist } = useWatchlist();
   const { watchlist } = useWatchlist();
   const { addToFavorites, isFavorite } = useFavorites();
@@ -306,7 +307,7 @@ const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(s
     shadowOpacity: 0.3,
     shadowRadius: 4,
    
-    marginTop:5}} onPress={askAI}>
+    marginTop:5}} onPress={()=>showagent(true)}>
   <Text style={{
    color: '#fff',
     fontWeight: 'bold',
@@ -481,7 +482,7 @@ style={{width:25,height:25}}/>
           No shows currently watching.
         </Text>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: -10 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
           {currentlyWatching.map((item) => (
             <TouchableOpacity key={item.id} style={{ marginHorizontal: 10 }}>
               <Image
@@ -732,10 +733,58 @@ resizeMode='stretch'
 )}
 
 {agent&&(
-  <Modal>
-    <TouchableOpacity>
-      <View></View>
-    </TouchableOpacity>
+  <Modal
+  onRequestClose={()=>showagent(false)}>
+    
+      <View style={{
+        flex:1,
+        backgroundColor:'gray'
+      }}>
+        <View style={{
+          width:'100%',
+          flexDirection:'row',
+          justifyContent:'space-between'
+        }}>
+          <TouchableOpacity onPress={()=>showagent(false)}>
+            <Image
+            source={require('../../assets/images/previous.png')}
+            style={{width:20,height:20,marginTop:10,marginLeft:10}}/>
+          </TouchableOpacity>
+          <TouchableOpacity >
+            <Image
+            source={require('../../assets/images/history.png')}
+            style={{width:20,height:20,marginTop:10,marginRight:30}}/>
+          </TouchableOpacity>
+        </View>
+
+<View style={{
+  width:'95%',
+  backgroundColor:'white',
+  flexDirection:'row',
+  display:'flex',
+  position:'absolute',
+  bottom:0,
+  borderRadius:20,
+  alignSelf:'center'
+}}>
+  <TextInput
+  style={{
+    width:'80%',
+    borderWidth:2,
+    borderColor:'blue',
+    borderRadius:20,
+    backgroundColor:'white',
+    marginLeft:10
+  }}/>
+  <TouchableOpacity>
+    <Image
+      source={require('../../assets/images/send.png')}
+      style={{width:40,height:40,marginTop:10,marginLeft:10}}/>
+  </TouchableOpacity>
+
+</View>
+      </View>
+   
   </Modal>
 )}
 
