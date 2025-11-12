@@ -187,6 +187,11 @@ const toggleExpand4 = () => {
           <Text>
             You can also report bugs or provide feedback directly through the contact section.
           </Text>
+
+          <Text style={styles.question}>Developer</Text>
+          <Text style={{fontStyle:'italic'}}>Armando Mabunda Júnior</Text>
+          <Text style={{fontStyle:'italic'}}>Languages Intusiastic and Mobile Developer </Text>
+          <Text style={{fontStyle:'normal'}}>FInd me on Instagram and LinkedIn</Text>
         </View>
       )}
 
@@ -301,11 +306,7 @@ const toggleExpand4 = () => {
 
       
 
-         <TouchableOpacity onPress={()=>setfont(false)}>
-          <View style={styles.setter}>
-            <Text style={styles.setterText}>Font Family</Text>
-          </View>
-        </TouchableOpacity>
+        
 
         <TouchableOpacity onPress={()=>setfontsize(true)}>
           <View style={styles.setter}>

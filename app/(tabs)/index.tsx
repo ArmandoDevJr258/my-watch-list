@@ -42,7 +42,56 @@ if (Platform.OS === 'android') {
 
 
 export default function HomeScreen() {
-  
+
+
+// --- Step 4: Main Component ---
+
+  const [searchText, setSearchText] = useState("");
+  const [matchedShows, setMatchedShows] = useState([]);
+  const [loadingShows, setLoadingShows] = useState(false);
+
+
+
+const fetchTVMaziShows = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/shows?page=1`);
+    const data = await res.json();
+    return data
+      .filter(show => show.rating && show.name)
+      .sort((a, b) => b.rating.average - a.rating.average);
+  } catch (error) {
+    console.error("Error fetching TV MAZI shows:", error);
+    return [];
+  }
+};
+
+const findMatchingShows = (userQuery, showArray) => {
+  const keywords = extractQueryKeywords(userQuery);
+
+  const scoredShows = showArray.map(show => {
+    const searchableFields = [
+      (show.name || "").toLowerCase(),
+      ...(show.genres || []).map(g => g.toLowerCase()),
+      ...(show.summary || "").toLowerCase().split(" ")
+    ];
+
+    let matchScore = 0;
+    keywords.forEach(kw => {
+      searchableFields.forEach(field => {
+        if (field.includes(kw)) matchScore++;
+      });
+    });
+
+    return { ...show, matchScore };
+  });
+
+  return scoredShows
+    .filter(show => show.matchScore > 0)
+    .sort((a, b) => b.matchScore - a.matchScore);
+};
+
+
+
   const { addToWatchlist, isInWatchlist } = useWatchlist();
   const { watchlist } = useWatchlist();
   const { addToFavorites, isFavorite } = useFavorites();
@@ -281,6 +330,10 @@ const openYouTubeTrailer = (query) => {
 
 // ✅ The core logic: filters out shows whose IDs are in the completedShowsIds array
 const currentlyWatching = watchlist.filter(show => !completedShowsIds.includes(show.id));
+
+  function setSearchResults(results: any) {
+    throw new Error('Function not implemented.');
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -732,61 +785,134 @@ resizeMode='stretch'
   </Modal>
 )}
 
-{agent&&(
+{agent && (
   <Modal
-  onRequestClose={()=>showagent(false)}>
-    
+    animationType="slide"
+    transparent={true}
+    visible={agent}
+    onRequestClose={() => showagent(false)}
+  >
+    <View style={{
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+    }}>
+      {/* Main container */}
       <View style={{
-        flex:1,
-        backgroundColor:'gray'
+        flex: 1,
+        backgroundColor: 'white',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        overflow: 'hidden',
       }}>
+        {/* Header */}
         <View style={{
-          width:'100%',
-          flexDirection:'row',
-          justifyContent:'space-between'
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: '#f8f8f8',
+          paddingHorizontal: 15,
+          paddingVertical: 10,
+          borderBottomWidth: 1,
+          borderColor: '#ddd',
         }}>
-          <TouchableOpacity onPress={()=>showagent(false)}>
+          <TouchableOpacity onPress={() => showagent(false)}>
             <Image
-            source={require('../../assets/images/previous.png')}
-            style={{width:20,height:20,marginTop:10,marginLeft:10}}/>
+              source={require('../../assets/images/previous.png')}
+              style={{ width: 25, height: 25 }}
+            />
           </TouchableOpacity>
-          <TouchableOpacity >
+
+          <Text style={{
+            fontSize: 22,
+            fontWeight: 'bold',
+            color: '#333',
+          }}>Ask Assistant</Text>
+
+          <TouchableOpacity>
             <Image
-            source={require('../../assets/images/history.png')}
-            style={{width:20,height:20,marginTop:10,marginRight:30}}/>
+              source={require('../../assets/images/history.png')}
+              style={{ width: 25, height: 25 }}
+            />
           </TouchableOpacity>
         </View>
 
-<View style={{
-  width:'95%',
-  backgroundColor:'white',
-  flexDirection:'row',
-  display:'flex',
-  position:'absolute',
-  bottom:0,
-  borderRadius:20,
-  alignSelf:'center'
-}}>
-  <TextInput
-  style={{
-    width:'80%',
-    borderWidth:2,
-    borderColor:'blue',
-    borderRadius:20,
-    backgroundColor:'white',
-    marginLeft:10
-  }}/>
-  <TouchableOpacity>
-    <Image
-      source={require('../../assets/images/send.png')}
-      style={{width:40,height:40,marginTop:10,marginLeft:10}}/>
-  </TouchableOpacity>
+        {/* Chat content */}
+        <View style={{ flex: 1, padding: 15 }}>
+          {loadingShows ? (
+            <ActivityIndicator size="large" color="#007bff" />
+          ) : (
+            <FlatList
+  data={matchedShows}
+  keyExtractor={(item) => item.id.toString()}
+  renderItem={({ item }) => (
+    <View style={{
+      padding: 10,
+      marginBottom: 10,
+      backgroundColor: '#f1f1f1',
+      borderRadius: 10,
+    }}>
+      <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
+      <Text style={{ color: 'red' }}>{item.genres?.join(', ')}</Text>
+      <Text style={{ color: 'red', marginTop: 5 }}>{item.summary?.replace(/<[^>]+>/g,'')}</Text>
+    </View>
+  )}
+/>
 
-</View>
+          )}
+        </View>
+
+        {/* Input Bar */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 10,
+          paddingVertical: 8,
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderColor: '#ddd',
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 3,
+        }}>
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Type your message..."
+            style={{
+              flex: 1,
+              backgroundColor: '#f1f1f1',
+              borderRadius: 25,
+              paddingHorizontal: 15,
+              paddingVertical: 10,
+              fontSize: 16,
+              marginRight: 10,
+            }}
+          />
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#007bff',
+              borderRadius: 25,
+              padding: 10,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            onPress={handleTVMaziSearch}
+          >
+            <Image
+              source={require('../../assets/images/send.png')}
+              style={{ width: 25, height: 25, tintColor: 'white' }}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
-   
+    </View>
   </Modal>
 )}
+
+
 
     </View>
   );
